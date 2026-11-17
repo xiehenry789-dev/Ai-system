@@ -200,6 +200,11 @@ kbd{display:inline-block;padding:1px 5px;border-radius:4px;border:1px solid var(
 body.touch #tracker{display:none}
 body.touch #bagbtn{display:block}
 @media (max-width:900px){#tracker{top:calc(env(safe-area-inset-top,0px) + 196px)}}
+.ptab[hidden]{display:none!important}
+.shopgreet{margin:0 0 6px;color:var(--text);font-style:italic}
+.btns{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.btns .mbtn{height:36px;padding:0 12px;font-size:13px;white-space:nowrap}
+@media (max-width:520px){.it{grid-template-columns:40px minmax(0,1fr)}.it .btns{grid-column:1/-1;justify-content:flex-start}}
 @media (max-width:460px){.slot{height:44px;flex-basis:44px}#bar{gap:4px;padding:5px}#spellname{font-size:13px}}
 @media (prefers-reduced-motion:reduce){.slot,#spellname,#hint{transition:none}}
 </style>
@@ -231,7 +236,7 @@ body.touch #bagbtn{display:block}
       <dt>Space</dt><dd>Jump</dd>
       <dt>1–7 · wheel</dt><dd>Choose a spell</dd>
       <dt>I · K · J</dt><dd>Bag · spells · quests</dd>
-      <dt>E · H</dt><dd>Talk to elders · drink a potion</dd>
+      <dt>E · H</dt><dd>Talk to elders and merchants · drink a potion</dd>
       <dt>M · P · Esc</dt><dd>Map · peaceful mode · pause</dd>
       <dt>Village well</dt><dd>Stand next to it to heal</dd>
     </dl>
@@ -270,6 +275,7 @@ body.touch #bagbtn{display:block}
 <div id="panel" hidden role="dialog" aria-modal="true" aria-label="Bag, spells and quests">
   <div class="pcard">
     <div class="ptabs">
+      <button class="ptab" data-tab="shop" type="button" hidden>Shop</button>
       <button class="ptab" data-tab="bag" type="button">Bag <kbd>I</kbd></button>
       <button class="ptab" data-tab="spells" type="button">Spells <kbd>K</kbd></button>
       <button class="ptab" data-tab="quests" type="button">Quests <kbd>J</kbd></button>
@@ -1579,6 +1585,7 @@ const SFX={
   levelup(){[523,659,784,1047].forEach((f,i)=>sTone({t:i*0.09,dur:0.7,wave:'triangle',f0:f,g:0.09,wet:0.8}));sNoise({dur:1.2,type:'highpass',f0:4000,g:0.04,a:0.3,wet:0.8});},
   learn(){[784,1175].forEach((f,i)=>sTone({t:i*0.08,dur:0.5,wave:'triangle',f0:f,g:0.07,wet:0.7}));},
   scream(x,z){const s=spat(x,z);sTone({dur:0.55,wave:'sawtooth',f0:620,f1:240,g:0.08*s.vol,a:0.03,pan:s.pan,wet:0.4});sNoise({dur:0.4,type:'bandpass',f0:1800,f1:700,q:3,g:0.06*s.vol,pan:s.pan});},
+  buy(){sTone({dur:0.12,wave:'triangle',f0:1568,g:0.06});sTone({t:0.07,dur:0.25,wave:'triangle',f0:2093,g:0.06,wet:0.5});},
   select(i){const f=[440,330,392,880,740,587,523][i];sTone({dur:0.16,wave:'triangle',f0:f,f1:f*1.5,g:0.05,wet:0.4});}
 };
 
@@ -1698,7 +1705,7 @@ function updatePlayer(dt){
   f-=joyY;s+=joyX;if(player.dead){f=0;s=0;player.jumpBuf=0;}
   const l=Math.hypot(f,s);if(l>1){f/=l;s/=l;}
   const wet=groundH(player.x,player.z)<WATER_Y-0.12&&player.feet<WATER_Y+0.05;
-  const run=(keys.ShiftLeft||keys.ShiftRight)?1.75:1,sp=4.3*run*(joyId!==null?Math.min(1,l*1.15)*1.25:1)*(wet?0.55:1);
+  const run=(keys.ShiftLeft||keys.ShiftRight)?1.75:1,sp=4.3*run*(joyId!==null?Math.min(1,l*1.15)*1.25:1)*(wet?0.55:1)*(1+0.1*SKILL.up.boots);
   const sy=Math.sin(player.yaw),cy=Math.cos(player.yaw);
   const tx=(-sy*f+cy*s)*sp,tz=(-cy*f-sy*s)*sp,k=Math.min(1,dt*(player.grounded?(l>0.01?9:7):2.2));
   player.vx+=(tx-player.vx)*k;player.vz+=(tz-player.vz)*k;
@@ -2032,7 +2039,7 @@ function castFire(h,rune,s){
   for(let i=0;i<n4;i++){rsphere(_r,fr(5,15)*(0.4+0.6*s));PB.spawn(x,y+0.3,z,_r.x,Math.abs(_r.y)*1.2+3,_r.z,fr(1.5,2.8),fr(0.2,0.42),0.16,0.17,0.12,0.07,1,0.09,0.07,0.05,17,0.1,1);}
   paintBlob(x,z,6.3*s,SCORCH,0.97,Math.round(12*s));
   const rk=SKILL.rank[0],dmg=30+45*(rk-1)/4;
-  blast(x,y+0.15,z,10.5*s,19*(0.55+0.45*s),0.5);hurtArea(x,y+0.5,z,10*s+0.8,dmg,{kb:16*s,up:7*s,burn:rk>=2?1.5+rk*0.6:0});clearShots(x,z,10*s);
+  blast(x,y+0.15,z,10.5*s,19*(0.55+0.45*s),0.5);hurtArea(x,y+0.5,z,10*s+0.8,dmg,{kb:16*s,up:7*s,burn:rk>=2?1.5+rk*0.6:0,fire:1});clearShots(x,z,10*s);
   treesNear(x,z,7.6*s,i=>burnTree(i));
   forFlowers(x,z,6*s,i=>killFlower(i));forFlowers(x,z,8.2*s,i=>tintFlower(i,0.3,0.24,0.18));
   meltCrystals(x,z,8*s);
@@ -2312,10 +2319,10 @@ const CASTERS=[castFire,castVoid,castTornado,castFrost,castLightning,castWind,ca
 function tryCast(sx,sy){
   if(cooldown>0||player.dead)return false;
   if(!SKILL.rank[selected]){selectSpell(selected);return false;}
-  if(selected===0){const h0=aim(sx,sy);cooldown=SPELLS[0].cd*(1-0.08*(SKILL.rank[0]-1));castT=0;SFX.charge(0);launchFireball(h0);$('hint').classList.add('gone');return true;}
+  if(selected===0){const h0=aim(sx,sy);cooldown=SPELLS[0].cd*(1-0.08*(SKILL.rank[0]-1))*(1-0.08*SKILL.up.sigil);castT=0;SFX.charge(0);launchFireball(h0);$('hint').classList.add('gone');return true;}
   if((selected===1&&voidBusy)||(selected===2&&tornadoBusy))return false;
   const h=aim(sx,sy),sp=SPELLS[selected],idx=selected;
-  cooldown=sp.cd*(1-0.08*(SKILL.rank[idx]-1));castT=0;SFX.charge(idx);$('hint').classList.add('gone');
+  cooldown=sp.cd*(1-0.08*(SKILL.rank[idx]-1))*(1-0.08*SKILL.up.sigil);castT=0;SFX.charge(idx);$('hint').classList.add('gone');
   const ry=h.piece>=0?h.y:h.gy;
   const rune=spawnRune(idx,h.x,ry,h.z);
   after(0.17,()=>{ // streak of light from the staff to the circle
@@ -2505,6 +2512,7 @@ function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   if(!e.aggro&&!quiet){e.aggro=true;alertCamp(e.camp);}
   if(e.frozen>0)dmg*=1.5;
   if(o&&o.sp)dmg*=spellMul(o.sp);
+  if(o&&(o.sp||o.fire))dmg*=1+0.1*SKILL.up.focus;
   e.hp-=dmg;
   if(!quiet){e.flash=1;hitMarker();SFX.hit(e.x,e.z);
     const c=e.type==='wisp'?[0.85,0.5,1]:e.type==='golem'?[1,0.8,0.55]:[0.7,1,0.35],cy=e.y+(e.T.fly?0:e.T.h*0.6);
@@ -2984,7 +2992,7 @@ function updateVillagers(dt){
     let wx=0,wz=0,sp=0;o.flee-=dt;
     if(o.flee>0){const l=Math.hypot(o.fx,o.fz)||1;wx=o.fx/l;wz=o.fz/l;sp=4.6;
       const hd=Math.hypot(o.x-o.v.x,o.z-o.v.z);if(hd>o.v.r+12){wx=(o.v.x-o.x)/hd;wz=(o.v.z-o.z)/hd;}}
-    else{o.wT-=dt;if(!o.wp||o.wT<=0){const a=Math.random()*6.283,r=o.elder?fr(2,5):fr(3,o.v.r*0.75);o.wp=[o.v.x+Math.cos(a)*r,o.v.z+Math.sin(a)*r];o.wT=fr(4,10);}
+    else{o.wT-=dt;if(!o.wp||o.wT<=0){const a=Math.random()*6.283,r=o.elder?fr(2,5):fr(3,o.v.r*0.75);o.wp=o.home?[o.home[0],o.home[1]]:[o.v.x+Math.cos(a)*r,o.v.z+Math.sin(a)*r];o.wT=fr(4,10);}
       const px=o.wp[0]-o.x,pz=o.wp[1]-o.z,d=Math.hypot(px,pz);if(d>0.6&&o.wT<7){wx=px/d;wz=pz/d;sp=1.3;}}
     o.vx+=(wx*sp-o.vx)*Math.min(1,dt*6);o.vz+=(wz*sp-o.vz)*Math.min(1,dt*6);o.x+=o.vx*dt;o.z+=o.vz*dt;
     const v=Math.hypot(o.vx,o.vz);if(v>0.2){let d=Math.atan2(o.vx,o.vz)-o.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));o.yaw+=d*Math.min(1,dt*8);}
@@ -3008,7 +3016,8 @@ const SPELL_INFO=[
   'Calls down lightning that stuns and jumps to nearby foes.',
   'A gust that hurls enemies and rubble and swats arrows and orbs out of the air.',
   'Grows flowers and a tree, roots enemies in place and heals you.'];
-const SKILL={level:1,xp:0,points:0,rank:[1,0,0,0,0,0,0],gold:0,inv:{},quests:{},kills:0};
+const SKILL={level:1,xp:0,points:0,rank:[1,0,0,0,0,0,0],gold:0,inv:{},quests:{},kills:0,up:{robes:0,focus:0,boots:0,sigil:0,luck:0},tomesBought:0};
+const maxHP=()=>100+10*(SKILL.level-1)+25*SKILL.up.robes;
 const xpNeed=L=>Math.round(80*Math.pow(L,1.4));
 const fireScale=()=>0.35+0.65*(SKILL.rank[0]-1)/4;
 const ITEMS={
@@ -3066,6 +3075,11 @@ function itemIcon(id){
   else if(id==='essence'){const g=x.createRadialGradient(32,32,2,32,32,24);g.addColorStop(0,'#fff');g.addColorStop(0.35,col);g.addColorStop(1,'rgba(120,40,200,0)');x.fillStyle=g;x.fillRect(0,0,64,64);}
   else if(id==='core'){x.fillStyle='#6a5a4a';x.fillRect(16,16,32,32);x.fillStyle=col;x.fillRect(24,24,16,16);}
   else if(id==='fletch'){x.strokeStyle='#7a5a32';x.lineWidth=4;for(let i=0;i<3;i++){x.beginPath();x.moveTo(14+i*6,52);x.lineTo(40+i*6,12);x.stroke();}x.fillStyle='#ccc';for(let i=0;i<3;i++){x.beginPath();x.moveTo(40+i*6,8);x.lineTo(44+i*6,16);x.lineTo(36+i*6,14);x.fill();}}
+  else if(id==='robes'){x.fillStyle=col;x.beginPath();x.moveTo(24,10);x.lineTo(40,10);x.lineTo(52,56);x.lineTo(12,56);x.closePath();x.fill();x.fillStyle='#ffd24a';x.fillRect(22,30,20,4);}
+  else if(id==='focus'){x.fillStyle=col;x.beginPath();x.moveTo(32,6);x.lineTo(50,30);x.lineTo(32,58);x.lineTo(14,30);x.closePath();x.fill();x.fillStyle='rgba(255,255,255,.6)';x.beginPath();x.moveTo(32,10);x.lineTo(40,30);x.lineTo(32,30);x.closePath();x.fill();}
+  else if(id==='boots'){x.fillStyle=col;x.beginPath();x.moveTo(20,8);x.lineTo(36,8);x.lineTo(36,40);x.lineTo(54,46);x.lineTo(54,56);x.lineTo(20,56);x.closePath();x.fill();x.fillStyle='#5a3a1a';x.fillRect(20,50,34,6);}
+  else if(id==='sigil'){x.strokeStyle=col;x.lineWidth=5;x.beginPath();x.arc(32,32,22,0,6.283);x.stroke();x.fillStyle=col;x.beginPath();x.moveTo(36,12);x.lineTo(22,34);x.lineTo(31,34);x.lineTo(26,52);x.lineTo(42,28);x.lineTo(33,28);x.closePath();x.fill();}
+  else if(id==='luck'){x.fillStyle='#2e8a3a';x.beginPath();x.arc(32,34,20,0,6.283);x.fill();x.fillStyle=col;for(let i=0;i<4;i++){const a=i*Math.PI/2+0.785;x.beginPath();x.arc(32+Math.cos(a)*8,34+Math.sin(a)*8,7,0,6.283);x.fill();}}
   else{x.fillStyle=col;x.beginPath();x.moveTo(14,48);x.lineTo(20,20);x.lineTo(32,34);x.lineTo(44,14);x.lineTo(50,48);x.closePath();x.fill();}
   ICON_CV[id]=c;return c;
 }
@@ -3086,7 +3100,7 @@ function gainXP(n,label){
   updateXP();queueSave();
 }
 function levelUp(){
-  player.max=100+10*(SKILL.level-1);player.hp=player.max;updateHud();
+  player.max=maxHP();player.hp=player.max;updateHud();
   const nu=UNLOCK.map((l,i)=>l===SKILL.level?SPELLS[i].name:null).filter(Boolean);
   banner('Level '+SKILL.level,nu.length?nu.join(', ')+' can now be learned · open spells (K)':'Skill point gained · open spells (K)');
   SFX.levelup();screenFlash(0.35,'#ffe9a8');refreshSpellBar();
@@ -3152,7 +3166,7 @@ function updateLoot(dt){
   }
 }
 function dropTable(key,x,y,z){
-  const L=LOOT_TABLE[key],g=Math.round(fr(L.gold[0],L.gold[1]));
+  const L=LOOT_TABLE[key],g=Math.round(fr(L.gold[0],L.gold[1])*(key==='villager'?1:1+0.3*SKILL.up.luck));
   if(g>0)dropItem(x,y,z,'gold',g);for(const d of L.drops)if(Math.random()<d[1])dropItem(x,y,z,d[0],1);
 }
 function onEnemyKilled(e){
@@ -3218,7 +3232,62 @@ function buildElder(){
   return {g,limbs,marker};
 }
 VILLAGES.forEach((v,i)=>{const m=buildElder();scene.add(m.g);
-  VILLAGERS.push({v,m,elder:true,name:v.elder,x:v.x+3,z:v.z+2,y:0,yaw:0,wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:30,dead:false});});
+  VILLAGERS.push({v,m,elder:true,name:v.elder,x:v.x-Math.cos(v.yaw+Math.PI/5)*3,z:v.z-Math.sin(v.yaw+Math.PI/5)*3,y:0,yaw:0,wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:30,dead:false});});
+/* ── village merchants and the shop ── */
+const SHOP=[{id:'potion',price:()=>25},{id:'bigpotion',price:()=>70},{id:'tome',price:()=>250+100*SKILL.tomesBought}];
+const UPGRADES={
+  robes:{name:'Sturdy Robes',desc:'+25 max health per tier.',prices:[100,200,350]},
+  focus:{name:'Focus Crystal',desc:'+10% damage for every spell per tier.',prices:[150,300,500]},
+  boots:{name:'Quickstep Boots',desc:'+10% walking and running speed per tier.',prices:[120,240,400]},
+  sigil:{name:'Swift Sigil',desc:'Spells recharge 8% faster per tier.',prices:[150,300,500]},
+  luck:{name:'Lucky Coin',desc:'Monsters drop 30% more gold per tier.',prices:[100,250]}
+};
+const SELL={horn:6,fletch:5,silk:8,essence:15,tusk:18,core:25,shard:120};
+Object.assign(ITEMS,{robes:{name:'Sturdy Robes',color:'#7a4fb0'},focus:{name:'Focus Crystal',color:'#7fd4ff'},boots:{name:'Quickstep Boots',color:'#a0703a'},sigil:{name:'Swift Sigil',color:'#ffe45c'},luck:{name:'Lucky Coin',color:'#5ad46a'}});
+function buildMerchant(){
+  const g=new T.Group(),shirt=stdMat(0x2f6a4a),apron=stdMat(0xd8c9a0),skin=stdMat(0xc08a64),dark=stdMat(0x3a2a1e),hat=stdMat(0x6b4524);
+  const body=new T.Mesh(new T.CylinderGeometry(0.24,0.3,0.8,10),shirt);body.position.y=1.0;g.add(body);
+  const ap=new T.Mesh(new T.BoxGeometry(0.42,0.62,0.04),apron);ap.position.set(0,0.88,0.28);g.add(ap);
+  const head=new T.Group();head.position.y=1.58;g.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.16,10,8),skin));
+  const brim=new T.Mesh(new T.CylinderGeometry(0.32,0.32,0.03,14),hat);brim.position.y=0.12;head.add(brim);
+  const top=new T.Mesh(new T.CylinderGeometry(0.16,0.18,0.18,12),hat);top.position.y=0.22;head.add(top);
+  const limbs={};
+  for(const sx of[-1,1]){const arm=new T.Group();arm.position.set(sx*0.3,1.32,0);g.add(arm);const a=new T.Mesh(new T.CylinderGeometry(0.055,0.05,0.55,6),shirt);a.position.y=-0.27;arm.add(a);
+    const leg=new T.Group();leg.position.set(sx*0.11,0.62,0);g.add(leg);const l=new T.Mesh(new T.CylinderGeometry(0.075,0.065,0.62,6),dark);l.position.y=-0.31;leg.add(l);
+    limbs[sx<0?'armL':'armR']=arm;limbs[sx<0?'legL':'legR']=leg;}
+  const marker=new T.Sprite(new T.SpriteMaterial({map:iconTex('gold'),depthTest:false,transparent:true,toneMapped:false}));marker.scale.set(0.5,0.5,1);marker.position.y=2.35;marker.renderOrder=29;g.add(marker);
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  return {g,limbs,marker};
+}
+VILLAGES.forEach((v,i)=>{const a=v.yaw+Math.PI/5,hx=v.x+Math.cos(a)*6.4,hz=v.z+Math.sin(a)*6.4,m=buildMerchant();scene.add(m.g);
+  VILLAGERS.push({v,m,merchant:true,name:['Merchant Ada','Merchant Bram'][i],home:[hx,hz],x:hx,z:hz,y:0,yaw:Math.atan2(-Math.cos(a),-Math.sin(a)),wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:25,dead:false});});
+let shopNPC=null;
+function openShop(o){shopNPC=o;openPanel('shop');}
+function spendGold(n){if(SKILL.gold<n){toast('Not enough gold');SFX.select(1);return false;}SKILL.gold-=n;SFX.buy();return true;}
+function shopBuy(id){const it=SHOP.find(s=>s.id===id);if(!it)return;const p=it.price();if(!spendGold(p))return;
+  SKILL.inv[id]=(SKILL.inv[id]||0)+1;if(id==='tome')SKILL.tomesBought++;feed('Bought '+ITEMS[id].name,ITEMS[id].color);afterTrade();}
+function shopUpgrade(k){const U=UPGRADES[k],t=SKILL.up[k];if(t>=U.prices.length)return;if(!spendGold(U.prices[t]))return;
+  SKILL.up[k]++;if(k==='robes'){player.max=maxHP();player.hp=Math.min(player.max,player.hp+25);}feed(U.name+' · tier '+SKILL.up[k],ITEMS[k].color);afterTrade();}
+function shopSell(id,all){const have=SKILL.inv[id]||0;if(!have||!SELL[id])return;const n=all?have:1;SKILL.inv[id]-=n;if(!SKILL.inv[id])delete SKILL.inv[id];
+  SKILL.gold+=n*SELL[id];SFX.buy();feed('Sold '+n+' '+ITEMS[id].name+' · +'+n*SELL[id]+' gold',ITEMS.gold.color);afterTrade();}
+function afterTrade(){updateXP();updateHud();trackerDirty=true;queueSave();renderPanel();}
+function renderShop(){
+  const g=SKILL.gold,row=(icon,name,desc,btns)=>'<div class="it"><img src="'+icon+'" alt=""><div><b>'+name+'</b><p>'+desc+'</p></div><div class="btns">'+btns+'</div></div>';
+  let h='<p class="shopgreet">'+shopNPC.name+': “Coin for goods, wizard. Everything is fair priced.”</p><h4>Supplies</h4><div class="items">';
+  for(const s of SHOP){const p=s.price();h+=row(iconURL(s.id),ITEMS[s.id].name+(SKILL.inv[s.id]?' <em>(have '+SKILL.inv[s.id]+')</em>':''),ITEMS[s.id].desc,'<button class="mbtn'+(g>=p?' primary':'')+'" data-buy="'+s.id+'"'+(g>=p?'':' disabled')+'>Buy · '+p+'g</button>');}
+  h+='</div><h4>Upgrades</h4><div class="items">';
+  for(const k in UPGRADES){const U=UPGRADES[k],t=SKILL.up[k],mx=U.prices.length,p=U.prices[t];
+    h+=row(iconURL(k),U.name+' <span class="rk">'+U.prices.map((_,i)=>'<i class="'+(i<t?'on':'')+'"></i>').join('')+'</span>',U.desc,
+      t>=mx?'<span class="max">Maxed</span>':'<button class="mbtn'+(g>=p?' primary':'')+'" data-up="'+k+'"'+(g>=p?'':' disabled')+'>Buy · '+p+'g</button>');}
+  h+='</div><h4>Sell</h4>';
+  const ids=Object.keys(SKILL.inv).filter(k=>SELL[k]&&SKILL.inv[k]>0);
+  h+=ids.length?'<div class="items">'+ids.map(id=>{const n=SKILL.inv[id],q=Object.keys(SKILL.quests).find(qid=>SKILL.quests[qid].state==='active'&&QUESTS[qid].goal.what===id);
+      return row(iconURL(id),ITEMS[id].name+' <em>×'+n+'</em>',SELL[id]+' gold each'+(q?' · needed for '+QUESTS[q].name:''),'<button class="mbtn" data-sell="'+id+'">Sell 1</button>'+(n>1?'<button class="mbtn" data-sellall="'+id+'">All · '+n*SELL[id]+'g</button>':''));}).join('')+'</div>'
+    :'<p class="empty">Nothing to sell. Materials dropped by monsters can be sold here.</p>';
+  return h;
+}
+$('pbody').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.buy)shopBuy(b.dataset.buy);else if(b.dataset.up)shopUpgrade(b.dataset.up);else if(b.dataset.sell)shopSell(b.dataset.sell,false);else if(b.dataset.sellall)shopSell(b.dataset.sellall,true);});
 for(const o of VILLAGERS){if(o.hp==null)o.hp=20;o.dead=false;}
 function hurtVillager(o,dmg,kx,kz){
   if(o.dead)return;o.hp-=dmg;o.flee=5;o.fx=(kx||0)+(o.x-player.x)*0.01;o.fz=(kz||0)+(o.z-player.z)*0.01;if(!kx&&!kz){o.fx=o.x-player.x;o.fz=o.z-player.z;}
@@ -3236,20 +3305,20 @@ function updateVillagerFates(dt){
   for(const o of VILLAGERS){
     if(o.dead){o.deadT+=dt;const k=Math.min(1,o.deadT/0.5);o.m.g.rotation.x=-Math.PI/2*k*k;o.m.g.position.y=o.y+0.2*k;
       if(o.deadT>10)o.m.g.visible=false;
-      if(time>o.respawnAt&&Math.hypot(player.x-o.v.x,player.z-o.v.z)>60){o.dead=false;o.hp=o.elder?30:20;o.x=o.v.x+fr(-4,4);o.z=o.v.z+fr(-4,4);o.m.g.rotation.x=0;o.m.g.visible=true;o.flee=0;}
+      if(time>o.respawnAt&&Math.hypot(player.x-o.v.x,player.z-o.v.z)>60){o.dead=false;o.hp=o.elder?30:20;o.x=o.home?o.home[0]:o.v.x+fr(-4,4);o.z=o.home?o.home[1]:o.v.z+fr(-4,4);o.m.g.rotation.x=0;o.m.g.visible=true;o.flee=0;}
       continue;}
     if(o.v.fear>time&&!player.dead&&Math.hypot(player.x-o.x,player.z-o.z)<14){o.flee=Math.max(o.flee,1.2);o.fx=o.x-player.x;o.fz=o.z-player.z;}
-    if(o.elder){const d=Math.hypot(player.x-o.x,player.z-o.z);
+    if(o.elder||o.merchant){const d=Math.hypot(player.x-o.x,player.z-o.z);
       if(d<4&&o.flee<=0&&o.v.fear<time){o.wT=2;o.wp=[o.x,o.z];o.yaw+=Math.atan2(Math.sin(Math.atan2(player.x-o.x,player.z-o.z)-o.yaw),Math.cos(Math.atan2(player.x-o.x,player.z-o.z)-o.yaw))*Math.min(1,dt*5);}
-      o.m.marker.visible=o.v.fear<time&&!!nextOffer(o.v);o.m.marker.position.y=2.35+Math.sin(time*3)*0.08;}
+      o.m.marker.visible=o.v.fear<time&&(o.merchant||!!nextOffer(o.v));o.m.marker.position.y=2.35+Math.sin(time*3)*0.08;}
   }
 }
 function nextOffer(v){for(const id of v.chain){const st=SKILL.quests[id];if(!st)return id;if(st.state==='active')return null;}return null;}
 let nearElder=null;
 function updatePrompt(){
   nearElder=null;if(player.dead)return void(promptEl.hidden=true);
-  for(const o of VILLAGERS)if(o.elder&&!o.dead&&Math.hypot(player.x-o.x,player.z-o.z)<3.4){nearElder=o;break;}
-  promptEl.hidden=!nearElder;if(nearElder){const t=(touchMode?'Tap':'E')+' · Talk to '+nearElder.name;if(promptEl.textContent!==t)promptEl.textContent=t;}
+  let bd=3.4;for(const o of VILLAGERS){if(!(o.elder||o.merchant)||o.dead)continue;const d=Math.hypot(player.x-o.x,player.z-o.z);if(d<bd){bd=d;nearElder=o;}}
+  promptEl.hidden=!nearElder;if(nearElder){const t=(touchMode?'Tap':'E')+(nearElder.merchant?' · Trade with ':' · Talk to ')+nearElder.name;if(promptEl.textContent!==t)promptEl.textContent=t;}
 }
 /* elder dialog */
 let dialogOpen=false,dialogQuest=null;
@@ -3257,6 +3326,7 @@ function openDialog(o){
   if(!o)return;dialogOpen=true;dialogQuest=null;if(locked)try{document.exitPointerLock();}catch(_){}
   const v=o.v,dq=$('dquest'),acc=$('daccept');$('dname').textContent=o.name+' of '+v.name;
   if(v.fear>time){$('dtext').textContent='Stay back! You have blood on your hands. Leave '+v.name+' alone.';dq.innerHTML='';acc.hidden=true;}
+  else if(o.merchant){dialogOpen=false;openShop(o);return;}
   else{
     questEvent('talk',null,1);
     const id=nextOffer(v),active=v.chain.find(q=>SKILL.quests[q]&&SKILL.quests[q].state==='active');
@@ -3276,13 +3346,15 @@ promptEl.addEventListener('click',()=>{audioInit();openDialog(nearElder);});
 /* character panel */
 let panelOpen=false,panelTab='bag',resetArm=false;
 function openPanel(tab){panelTab=tab;resetArm=false;if(!panelOpen){panelOpen=true;if(locked)try{document.exitPointerLock();}catch(_){} $('panel').hidden=false;}renderPanel();updatePause();}
-function closePanel(){panelOpen=false;$('panel').hidden=true;updatePause();requestLock();}
+function closePanel(){panelOpen=false;shopNPC=null;$('panel').hidden=true;updatePause();requestLock();}
 function renderPanel(){
   if(!panelOpen)return;
-  document.querySelectorAll('.ptab').forEach(b=>b.classList.toggle('on',b.dataset.tab===panelTab));
+  if(panelTab==='shop'&&!shopNPC)panelTab='bag';
+  document.querySelectorAll('.ptab').forEach(b=>{b.classList.toggle('on',b.dataset.tab===panelTab);if(b.dataset.tab==='shop')b.hidden=!shopNPC;});
   const P=$('pbody');let h='';
   const head='<div class="phead"><span class="pl">Level '+SKILL.level+'</span><span class="px">'+SKILL.xp+' / '+xpNeed(SKILL.level)+' XP</span><span class="pg"><img src="'+iconURL('gold')+'" alt="">'+SKILL.gold+'</span><span class="pp">'+SKILL.points+' skill point'+(SKILL.points===1?'':'s')+'</span></div>';
-  if(panelTab==='bag'){
+  if(panelTab==='shop'){h=head+renderShop();}
+  else if(panelTab==='bag'){
     const ids=Object.keys(SKILL.inv).filter(k=>SKILL.inv[k]>0);
     h=head+(ids.length?'<div class="items">'+ids.map(id=>'<div class="it"><img src="'+iconURL(id)+'" alt=""><div><b>'+ITEMS[id].name+' <em>×'+SKILL.inv[id]+'</em></b><p>'+ITEMS[id].desc+'</p></div>'+(ITEMS[id].use?'<button class="mbtn" data-use="'+id+'">'+(id==='tome'?'Read':'Drink')+'</button>':'')+'</div>').join('')+'</div>'
       :'<p class="empty">Your bag is empty. Defeat monsters and pick up what they drop.</p>');
@@ -3307,13 +3379,13 @@ $('bagbtn').addEventListener('click',()=>{audioInit();openPanel('bag');});
 /* save */
 const SAVEKEY='wizard-meadow-save-1';
 function queueSave(){saveT=time+1;}
-function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills}));}catch(_){}}
+function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought}));}catch(_){}}
 function loadGame(){try{const d=JSON.parse(localStorage.getItem(SAVEKEY)||'null');if(!d||d.v!==1)return false;
-  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:d.rank,gold:d.gold,inv:d.inv||{},quests:d.quests||{}});COMBAT.kills=d.kills||0;return true;}catch(_){return false;}}
+  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:d.rank,gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0},d.up||{}),tomesBought:d.tb||0});COMBAT.kills=d.kills||0;return true;}catch(_){return false;}}
 function resetProgress(){try{localStorage.removeItem(SAVEKEY);}catch(_){}
-  Object.assign(SKILL,{level:1,xp:0,points:0,rank:[1,0,0,0,0,0,0],gold:0,inv:{},quests:{}});COMBAT.kills=0;
+  Object.assign(SKILL,{level:1,xp:0,points:0,rank:[1,0,0,0,0,0,0],gold:0,inv:{},quests:{},up:{robes:0,focus:0,boots:0,sigil:0,luck:0},tomesBought:0});COMBAT.kills=0;
   for(const id of['sparks','imps','village'])SKILL.quests[id]={state:'active',prog:0};
-  player.max=100;player.hp=100;refreshSpellBar();selectSpell(0,true);updateXP();updateHud();trackerDirty=true;renderPanel();feed('Progress erased','#ff8a6a');}
+  player.max=maxHP();player.hp=player.max;refreshSpellBar();selectSpell(0,true);updateXP();updateHud();trackerDirty=true;renderPanel();feed('Progress erased','#ff8a6a');}
 /* per-frame */
 function updateRPG(dt){
   if(dt<=0)return;
@@ -3325,7 +3397,7 @@ function updateRPG(dt){
 /* boot */
 slots.forEach(b=>{const lk=document.createElement('span');lk.className='lk';const pp2=document.createElement('span');pp2.className='pips';b.append(lk,pp2);});
 if(!loadGame()){for(const id of['sparks','imps','village'])SKILL.quests[id]={state:'active',prog:0};}
-player.max=100+10*(SKILL.level-1);player.hp=player.max;
+player.max=maxHP();player.hp=player.max;
 
 /* ───────────────────────── map: minimap + full map ───────────────────────── */
 const MS=1024,MPM=MS/TEXW,W2M=v=>(v/TEXW+0.5)*MS;
@@ -3559,7 +3631,7 @@ function frame(now){
   if(time>4&&fpsAvg>30){slowT+=dt;if(slowT>2.5&&PR>0.8){PR=Math.max(0.75,PR*0.8);grassMesh.count=Math.max(12000,Math.floor(grassMesh.count*0.75));resize();slowT=0;}}else slowT=0;
 }
 requestAnimationFrame(frame);
-window.__wm={fire:(x,y,z)=>launchFireball({x,y,z,gy:groundH(x,z),piece:0}),player,SKILL,gainXP,openPanel,openDialog,VILLAGERS,dropItem,enemies,COMBAT,CAMPS,BOSS,VILLAGES,CROWN,spawn:(t,x,z)=>spawnEnemy(t,x,z),skipLock:()=>{lockFailed=true;updatePause();},openMap,closeMap,setWp:(x,z)=>{waypoint={x,z};},cast:(i,x,z)=>{selectSpell(i,true);cooldown=0;const ry=groundH(x,z),h={x,y:ry,z,gy:ry,piece:-1,tree:-1,dist:10};const rune=spawnRune(i,x,ry,z);castT=0;CASTERS[i](h,rune);},
+window.__wm={openShop,fire:(x,y,z)=>launchFireball({x,y,z,gy:groundH(x,z),piece:0}),player,SKILL,gainXP,openPanel,openDialog,VILLAGERS,dropItem,enemies,COMBAT,CAMPS,BOSS,VILLAGES,CROWN,spawn:(t,x,z)=>spawnEnemy(t,x,z),skipLock:()=>{lockFailed=true;updatePause();},openMap,closeMap,setWp:(x,z)=>{waypoint={x,z};},cast:(i,x,z)=>{selectSpell(i,true);cooldown=0;const ry=groundH(x,z),h={x,y:ry,z,gy:ry,piece:-1,tree:-1,dist:10};const rune=spawnRune(i,x,ry,z);castT=0;CASTERS[i](h,rune);},
   stats:()=>({pieces:pn,awake:awake.length,pending:pending.length/2,trees:TR.n,flowers:FL.n,pa:PA.live,pb:PB.live,fps:1000/fpsAvg})};
 })();
 </script>
