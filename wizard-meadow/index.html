@@ -457,6 +457,21 @@ body.touch #bagbtn{display:block}
 .mbtn.hm-danger{background:#a8332a;border-color:#d0574c;height:44px}
 .hm-row .mbtn{height:44px}
 .hm-back{align-self:flex-start;height:40px}
+#fairy{position:fixed;left:max(18px,env(safe-area-inset-left,0px));top:max(64px,9%);z-index:75;width:min(330px,calc(100vw - 36px));box-sizing:border-box;padding:14px 16px 12px;border-radius:14px;
+  background:rgba(14,20,30,.86);border:1px solid rgba(255,217,138,.45);box-shadow:0 10px 34px rgba(0,0,0,.4),0 0 24px rgba(255,217,138,.12);color:var(--text);font-family:var(--ui);
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);pointer-events:auto}
+#fairy[hidden]{display:none!important}
+#fairy.pop{animation:fypop .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes fypop{0%{opacity:0;transform:translateY(8px) scale(.94)}100%{opacity:1;transform:none}}
+.fy-head{display:flex;align-items:center;gap:8px;margin-bottom:6px;font:700 13px/1 var(--ui);color:var(--gold);letter-spacing:.06em}
+.fy-head i{width:10px;height:10px;border-radius:50%;background:#fff1c8;box-shadow:0 0 10px 3px rgba(255,217,138,.8)}
+.fy-head span{margin-left:auto;font:600 11px/1 var(--ui);color:var(--muted);letter-spacing:0}
+#fytext{margin:0;font:500 15px/1.45 var(--ui)}
+.fy-foot{margin-top:10px;font:500 12px/1.3 var(--ui);color:var(--muted)}
+#fybtns{display:flex;gap:8px;justify-content:flex-end}#fybtns[hidden],#fykeys[hidden],#fynext[hidden]{display:none}
+#fybtns .mbtn{height:34px;padding:0 12px;font-size:13px}
+body.home #fairy{display:none!important}
+@media (prefers-reduced-motion:reduce){#fairy.pop{animation:none}}
 .hm-side.pane{gap:14px}.hm-side.pane .hm-kicker,.hm-side.pane .hm-foot{display:none}.hm-side.pane .hm-title{font-size:34px}.hm-side.pane .hm-title span{display:inline}
 .hm-foot{margin-top:auto;font:500 12px/1.4 var(--ui);color:var(--muted)}
 .pcard{max-width:340px}.pcard .psub{margin:0 0 16px;font:500 13px/1.4 var(--ui);color:var(--muted)}
@@ -486,6 +501,7 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
 <div id="cross" hidden><i></i></div>
 <div id="status"><div id="hp" role="meter" aria-label="Health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100"><i id="hpfill"></i><span id="hptext">100</span></div><div id="xprow"><span id="lvl">Lv 1</span><span id="ptsbadge" hidden title="Unspent skill points">0</span><div id="xpbar"><i id="xpfill"></i></div><span id="xpgain" aria-hidden="true"></span><span id="gold">0</span></div><div id="wave">Explore Meadowvale</div><div id="study" hidden><b></b><em></em><span><i></i></span></div><div id="fx"></div></div>
 <button id="strike" type="button" aria-label="Staff strike" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19L17 7M14 4l6 6M4 14l6 6"/></svg>Strike</button>
+<div id="fairy" hidden role="status" aria-live="polite"><div class="fy-head"><i></i>Pip<span id="fystep"></span></div><p id="fytext"></p><div class="fy-foot"><span id="fykeys"></span><div id="fybtns"><button type="button" class="mbtn" id="fynext">Next</button><button type="button" class="mbtn" id="fyskip">Skip tips</button></div></div></div>
 <div id="pause" hidden>
   <div class="card pcard">
     <h1 id="ptitle">Paused</h1>
@@ -493,7 +509,6 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
     <div class="pbtns">
       <button class="mbtn primary" id="playbtn" type="button">Resume</button>
       <button class="mbtn" id="psettings" type="button">Settings</button>
-      <button class="mbtn" id="phow" type="button">How to play</button>
       <button class="mbtn" id="pmenu" type="button">Main menu</button>
     </div>
   </div>
@@ -506,7 +521,6 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
       <button type="button" class="hm-btn" id="hmcont" hidden><b>Continue</b><small id="hmsave"></small></button>
       <button type="button" class="hm-btn" id="hmnew"><b>New game</b><small id="hmnewsub"></small></button>
       <button type="button" class="hm-btn" id="hmset"><b>Settings</b><small>Graphics, sound and mouse</small></button>
-      <button type="button" class="hm-btn" id="hmhow"><b>How to play</b><small>Controls and tips</small></button>
     </nav>
     <section class="hm-pane" id="hmconfirm" hidden aria-label="Start a new game">
       <h2>Start over?</h2><p id="hmconfirmtext"></p>
@@ -519,26 +533,7 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
       <label class="hm-field"><span class="hm-lab">Volume <output id="volout"></output></span><input type="range" id="setvol" min="0" max="100" step="5"></label>
       <label class="hm-field"><span class="hm-lab">Mouse sensitivity <output id="sensout"></output></span><input type="range" id="setsens" min="30" max="250" step="10"></label>
       <label class="hm-check"><input type="checkbox" id="setinv"> Invert mouse up and down</label>
-      <button type="button" class="mbtn hm-back">Back</button>
-    </section>
-    <section class="hm-pane" id="hmhowto" hidden aria-label="How to play">
-      <h2>How to play</h2>
-      <p>You start with a weak fireball. Gather glowing reagents, defeat monsters and open chests to learn new spells from your spellbook. Elders have quests, merchants sell a flying broom, and the Hollow King waits in Crown Hollow.</p>
-      <dl class="keys">
-      <dt>Mouse</dt><dd>Look around</dd>
-      <dt>Right click</dt><dd>Cast the selected spell</dd>
-      <dt>Left click · F</dt><dd>Staff strike</dd>
-      <dt>WASD · Shift</dt><dd>Walk · run</dd>
-      <dt>Space</dt><dd>Jump</dd>
-      <dt>1–5 · wheel</dt><dd>Choose an equipped spell</dd>
-      <dt>I · K · J</dt><dd>Bag · spellbook · quests</dd>
-      <dt>B</dt><dd>Ride your broom · Space up · C down</dd>
-      <dt>E · H</dt><dd>Talk to elders and merchants · drink a potion</dd>
-      <dt>M · P · Esc</dt><dd>Map · peaceful mode · pause</dd>
-      <dt>Experience</dt><dd>Glowing orbs burst from beaten monsters, cleared camps and smashed buildings, then fly into you</dd>
-      <dt>Monster levels</dt><dd>Grey and green are easy, white is even, orange is hard; a red skull is 3+ levels above you and will win</dd>
-      <dt>Village well</dt><dd>Stand next to it to heal</dd>
-    </dl>
+      <div class="hm-field"><span class="hm-lab">Fairy companion</span><div class="hm-seg" id="fairyrow" role="group" aria-label="Fairy companion"><button type="button" data-fy="1">Show Pip</button><button type="button" data-fy="0">Hide Pip</button></div></div>
       <button type="button" class="mbtn hm-back">Back</button>
     </section>
     <p class="hm-foot">Your progress saves itself as you play.</p>
@@ -2432,6 +2427,7 @@ window.addEventListener('keydown',e=>{
   if(mapOpen){if(k==='Escape'||k==='KeyM'){e.preventDefault();closeMap();}return;}
   if(dialogOpen){if(k==='Escape'||k==='KeyE'){e.preventDefault();closeDialog();}return;}
   if(panelOpen){const t={KeyI:'bag',KeyK:'spells',KeyJ:'quests'}[k];if(k==='Escape'||(t&&t===panelTab)){e.preventDefault();closePanel();}else if(t){if(t==='spells')openPanel('spells');else{panelTab=t;resetArm=false;renderPanel();}}return;}
+  if(tutKey(k)){e.preventDefault();return;}
   keys[k]=true;audioInit();firstInput();
   if(k.startsWith('Digit')){const n=+k.slice(5);if(n>=1&&n<=5){const i=SKILL.equip[n-1];if(i>=0)selectSpell(i);e.preventDefault();}}
   else if(k==='KeyN')toggleMute();
@@ -2516,7 +2512,7 @@ function updatePlayer(dt){
   collidePlayer();
   player.coyote-=dt;player.jumpBuf-=dt;
   if(player.jumpBuf>0&&(player.grounded||player.coyote>0)){
-    player.vy=(wet?5.6:7.4)*(player.hasteT>time?1.22:1)*(player.glideT>time?1.2:1);player.grounded=false;player.coyote=0;player.jumpBuf=0;SFX.jump();if(wet)splash(player.x,player.z,10);
+    player.vy=(wet?5.6:7.4)*(player.hasteT>time?1.22:1)*(player.glideT>time?1.2:1);player.grounded=false;player.coyote=0;player.jumpBuf=0;tutEv('jump');SFX.jump();if(wet)splash(player.x,player.z,10);
   }
   player.vy=Math.max(player.glideT>time?-2.2:-30,player.vy-21*dt);player.feet+=player.vy*dt;
   const fl=floorAt(player.x,player.z,player.feet);
@@ -3314,6 +3310,73 @@ function updateCulling(dt){
   for(const t of TERR.tiles){const d=Math.hypot(t.x-cx,t.z-cz)-t.r,vis=d<fogR+80,near=d<QUAL.lodR;if(t.low===t.full)t.full.visible=vis;else{t.full.visible=vis&&near;t.low.visible=vis&&!near;}}
 }
 function setShadowSize(n){sun.shadow.mapSize.set(n,n);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
+/* ── Pip, the fairy who wakes you and teaches you magic ── */
+const FAIRY={g:null,wings:[],glow:null,x:0,y:0,z:0,init:false,arrive:0};
+(function(){
+  const g=new T.Group(),bodyM=new T.MeshStandardMaterial({color:0xffd9b0,emissive:new T.Color(0xff9a3c),emissiveIntensity:0.45,roughness:0.5});
+  const body=new T.Mesh(new T.SphereGeometry(0.06,14,10),bodyM);body.scale.set(1,1.6,1);g.add(body);
+  const head=new T.Mesh(new T.SphereGeometry(0.05,12,10),bodyM);head.position.y=0.13;g.add(head);
+  const hair=new T.Mesh(new T.SphereGeometry(0.056,12,8,0,6.283,0,1.4),new T.MeshStandardMaterial({color:0xff6fb8,emissive:new T.Color(0x6a1a44),roughness:0.5}));hair.position.y=0.14;g.add(hair);
+  const wm=new T.MeshBasicMaterial({color:0x7fd0ff,transparent:true,opacity:0.5,side:T.DoubleSide,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false});
+  const up=new T.Shape();up.moveTo(0,0);up.bezierCurveTo(0.04,0.2,0.26,0.26,0.25,0.08);up.bezierCurveTo(0.23,-0.02,0.08,-0.02,0,0);
+  const lo=new T.Shape();lo.moveTo(0,0);lo.bezierCurveTo(0.05,-0.04,0.18,-0.16,0.13,-0.18);lo.bezierCurveTo(0.08,-0.2,0.02,-0.08,0,0);
+  const ug=new T.ShapeGeometry(up),lg=new T.ShapeGeometry(lo);
+  for(const sx of[-1,1]){const p=new T.Group();p.position.set(0,0.06,-0.03);for(const gg of[ug,lg]){const w=new T.Mesh(gg,wm);w.scale.set(sx,1,1);p.add(w);}g.add(p);FAIRY.wings.push({p,sx});}
+  const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xffe2a0,blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false}));gl.scale.set(0.55,0.55,1);g.add(gl);FAIRY.glow=gl;
+  g.traverse(o=>{o.renderOrder=16;});g.visible=false;scene.add(g);FAIRY.g=g;
+})();
+const TS={look:0,walk:0,ev:{},lyaw:0,lx:0,lz:0,t:0,shown:-1,sawBook:false,guide:null};
+const TUT=[
+  {say:()=>"You're awake at last! I'm Pip, your fairy. You have a wizard's staff and no idea how to use it, so let me show you.",auto:7},
+  {say:()=>touchMode?'Drag on the right side of the screen to look around.':'Move your mouse to look around.',done:()=>TS.look>2.4},
+  {say:()=>touchMode?'Use the stick at the bottom left to walk.':'Walk with W A S D. Hold Shift to run.',done:()=>TS.walk>8},
+  {say:()=>touchMode?'Tap the arrow button to jump.':'Press Space to jump. Go on, hop!',done:()=>TS.ev.jump},
+  {say:()=>touchMode?'Now some magic! Tap the world to throw your fireball.':'Now some magic! Right-click to throw your fireball. That old ruin looks like a good target.',done:()=>(TS.ev.cast||0)>=2},
+  {say:()=>touchMode?'Too close for spells? Tap the staff button to give things a whack.':'Too close for spells? Left-click, or press F, to swing your staff.',done:()=>TS.ev.strike},
+  {say:()=>'See the glowing plants? New spells are made from them. Walk into one to pick it up. Follow me!',done:()=>TS.ev.gather,guide:true},
+  {say:()=>touchMode?'Now open your spellbook with the book button.':'Now press K to open your spellbook.',done:()=>bookOpen},
+  {say:()=>'Each page is a spell. When you have everything it asks for, press Study to learn it. Close the book when you are ready.',done:()=>TS.sawBook&&!bookOpen},
+  {say:()=>touchMode?'Spells you learn go in your bar at the top. Tap one to choose it.':'Spells you learn go in your bar at the top. Press 1 to 5, or roll the mouse wheel, to choose one.',auto:8},
+  {say:()=>touchMode?'Your quests are in the bag menu. Elders in the villages give you more.':'Press J to see your quests. Elders in the villages give you more.',done:()=>panelOpen&&(touchMode||panelTab==='quests')},
+  {say:()=>touchMode?'Tap the little map to open the big one.':'Press M to open the map. Touch a glowing waystone and you can travel back to it from there.',done:()=>TS.ev.map||mapOpen},
+  {say:()=>'Beat monsters to catch their glowing XP orbs and level up. Stay away from anything with a red skull: it is far stronger than you. I will stay close. Off you go!',auto:10}
+];
+function tutEv(k){TS.ev[k]=(TS.ev[k]||0)+1;}
+function tutActive(){return SKILL.tut<TUT.length&&!homeOpen&&!player.dead;}
+function tutAdvance(){SKILL.tut++;TS.t=0;TS.ev={};TS.look=0;TS.walk=0;if(SKILL.tut>=TUT.length)SKILL.tut=99;queueSave();}
+function tutSkip(){SKILL.tut=99;queueSave();$('fairy').hidden=true;feed('Pip will keep quiet now','#ffd98a');}
+function tutShow(){const el=$('fairy');if(!tutActive()||paused()){el.hidden=true;TS.shown=-1;return;}
+  el.hidden=false;if(TS.shown===SKILL.tut)return;TS.shown=SKILL.tut;const st=TUT[SKILL.tut];
+  $('fytext').textContent=st.say();$('fystep').textContent=(SKILL.tut+1)+' / '+TUT.length;
+  const keys=!touchMode&&!lockFailed;$('fykeys').hidden=!keys;$('fybtns').hidden=keys;$('fynext').hidden=!st.auto;
+  $('fykeys').textContent=(st.auto?'Enter: next · ':'')+'T: skip tips';
+  el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');
+  sTone({dur:0.25,wave:'sine',f0:1320,f1:1760,g:0.03,wet:0.6});sTone({t:0.08,dur:0.3,wave:'sine',f0:1760,f1:2350,g:0.022,wet:0.7});}
+function tutKey(k){if(!tutActive())return false;if(k==='KeyT'){tutSkip();return true;}if(k==='Enter'&&TUT[SKILL.tut].auto){tutAdvance();return true;}return false;}
+$('fynext').addEventListener('click',e=>{e.stopPropagation();if(tutActive())tutAdvance();});
+$('fyskip').addEventListener('click',e=>{e.stopPropagation();tutSkip();});
+function updateTutorial(rdt){
+  if(!tutActive()){if(!$('fairy').hidden)$('fairy').hidden=true;TS.guide=null;return;}
+  const dy=Math.abs(Math.atan2(Math.sin(player.yaw-TS.lyaw),Math.cos(player.yaw-TS.lyaw)));if(dy<1)TS.look+=dy;TS.lyaw=player.yaw;
+  const dw=Math.hypot(player.x-TS.lx,player.z-TS.lz);if(dw<3&&player.grounded)TS.walk+=dw;TS.lx=player.x;TS.lz=player.z;
+  if(bookOpen)TS.sawBook=true;
+  const st=TUT[SKILL.tut];if(TS.shown===SKILL.tut&&!paused())TS.t+=rdt;
+  if(st.guide){let b=null,bd=45;for(const o of NODES){if(!o.on)continue;const d=Math.hypot(o.x-player.x,o.z-player.z);if(d<bd){bd=d;b=o;}}TS.guide=b;}else TS.guide=null;
+  if(TS.t>1.2&&((st.auto&&TS.t>st.auto)||(st.done&&st.done())))tutAdvance();
+  tutShow();
+}
+function updateFairy(rdt){
+  const g=FAIRY.g,show=!homeOpen&&!player.dead&&SET.fairy!==false;g.visible=show;if(!show){FAIRY.init=false;return;}
+  const t=performance.now()/1000,sy=Math.sin(player.yaw),cy=Math.cos(player.yaw),fx=-sy,fz=-cy,rx=cy,rz=-sy;
+  let tx=player.x+fx*1.7-rx*0.95,tz=player.z+fz*1.7-rz*0.95,ty=player.feet+1.42+Math.sin(t*2.1)*0.08;
+  const gd=TS.guide;if(gd&&Math.hypot(gd.x-player.x,gd.z-player.z)>2.5){tx=gd.x;tz=gd.z;ty=gd.y+1.3+Math.sin(t*3)*0.12;}
+  if(!FAIRY.init||Math.hypot(tx-FAIRY.x,tz-FAIRY.z)>40){FAIRY.init=true;FAIRY.x=tx+fx*9+rx*3;FAIRY.z=tz+fz*9+rz*3;FAIRY.y=ty+4;}
+  const k=1-Math.exp(-rdt*(gd?2.2:4.5));FAIRY.x+=(tx-FAIRY.x)*k;FAIRY.y+=(ty-FAIRY.y)*k;FAIRY.z+=(tz-FAIRY.z)*k;
+  g.position.set(FAIRY.x+Math.sin(t*1.3)*0.05,FAIRY.y,FAIRY.z+Math.cos(t*1.1)*0.05);g.lookAt(camera.position.x,FAIRY.y,camera.position.z);
+  const f=Math.sin(t*32);for(const w of FAIRY.wings)w.p.rotation.y=w.sx*(0.35+f*0.6);
+  FAIRY.glow.material.opacity=0.75+Math.sin(t*5)*0.15;
+  if(Math.random()<0.55)PA.spawn(g.position.x+fr(-0.05,0.05),g.position.y+fr(-0.05,0.05),g.position.z+fr(-0.05,0.05),fr(-0.15,0.15),fr(-0.4,-0.1),fr(-0.15,0.15),fr(0.5,0.9),0.05,0.01,1,0.9,0.6,1,1,0.6,0.9,0,0.4);
+}
 function updateFxPool(dt){
   for(const o of FXP.fl){if(!o.s.visible)continue;o.t+=dt;const k=o.t/o.d;if(k>=1){o.s.visible=false;continue;}const e=1-(1-k)*(1-k);o.s.scale.setScalar(o.r*(0.4+0.8*e));o.s.material.opacity=(1-k)*(1-k);}
   for(const o of FXP.sh){if(!o.m.visible)continue;o.t+=dt;const k=o.t/o.d;if(k>=1){o.m.visible=false;continue;}const e=1-Math.pow(1-k,3),r=Math.max(0.01,o.r0+(o.r1-o.r0)*e);
@@ -4130,7 +4193,7 @@ function tryCast(sx,sy){
   if(CD[idx]>0){if(CD[idx]>0.3)toast(SPELLS[idx].name+' recharging');return false;}
   if((idx===1&&voidBusy)||(idx===2&&tornadoBusy))return false;
   const h=aim(sx,sy),sp=SPELLS[idx];
-  cooldown=0.28;CD[idx]=CDMAX[idx]=spellCd(idx);castT=0;SFX.charge(idx);castFlourish(sp);{const k=SKILL.equip.indexOf(idx);if(k>=0){const sb=slots[k];sb.classList.remove('cast');void sb.offsetWidth;sb.classList.add('cast');}}camKick=Math.min(0.045,camKick+(sp.mode?0.014:0.008));$('hint').classList.add('gone');
+  cooldown=0.28;CD[idx]=CDMAX[idx]=spellCd(idx);castT=0;tutEv('cast');SFX.charge(idx);castFlourish(sp);{const k=SKILL.equip.indexOf(idx);if(k>=0){const sb=slots[k];sb.classList.remove('cast');void sb.offsetWidth;sb.classList.add('cast');}}camKick=Math.min(0.045,camKick+(sp.mode?0.014:0.008));$('hint').classList.add('gone');
   if(sp.mode){SPELL_FX[idx](h);return true;}
   const ry=h.piece>=0?h.y:h.gy;
   const rune=spawnRune(idx,h.x,ry,h.z);
@@ -4654,7 +4717,7 @@ function bossDefeated(e){
 }
 /* staff strike */
 function melee(){
-  if(meleeCd>0||player.dead)return;meleeCd=0.5;swingT=0;SFX.whoosh();
+  if(meleeCd>0||player.dead)return;meleeCd=0.5;swingT=0;tutEv('strike');SFX.whoosh();
   after(0.12,()=>{
     const fx=-Math.sin(player.yaw),fz=-Math.cos(player.yaw);let hit=false;
     for(const e of enemies){if(e.state==='dead')continue;const dx=e.x-player.x,dz=e.z-player.z,d=Math.hypot(dx,dz);if(d>2.5+e.T.r)continue;
@@ -4681,7 +4744,7 @@ pauseEl.addEventListener('click',()=>{audioInit();firstInput();requestLock();});
 const homeEl=$('home');let hadSave=false,START_YAW=0;
 function saveSet(){try{localStorage.setItem('wizard-meadow-settings',JSON.stringify(SET));}catch(e){}}
 function applyVolume(){if(AU.master)AU.master.gain.value=AU.on?0.85*SET.vol:0;const b=$('mute');b.textContent=AU.on?'♪':'×';b.setAttribute('aria-label',AU.on?'Mute sound':'Turn sound on');}
-function homePane(id){for(const p of['hmconfirm','hmsettings','hmhowto'])$(p).hidden=p!==id;$('hmmenu').hidden=!!id;homeEl.querySelector('.hm-side').classList.toggle('pane',!!id);if(id==='hmsettings')syncSettingsUI();
+function homePane(id){for(const p of['hmconfirm','hmsettings'])$(p).hidden=p!==id;$('hmmenu').hidden=!!id;homeEl.querySelector('.hm-side').classList.toggle('pane',!!id);if(id==='hmsettings')syncSettingsUI();
   const f=id?$(id).querySelector('button,input'):$('hmmenu').querySelector('.hm-btn:not([hidden])');if(f)try{f.focus({preventScroll:true});}catch(e){}}
 function refreshHome(){const has=hadSave||gamePlayed;$('hmcont').hidden=!has;$('hmcont').classList.toggle('hm-primary',has);$('hmnew').classList.toggle('hm-primary',!has);
   if(has)$('hmsave').textContent='Level '+SKILL.level+' · '+SKILL.gold+' gold · '+COMBAT.kills+' monsters defeated';
@@ -4700,18 +4763,18 @@ $('hmerase').addEventListener('click',()=>{resetProgress();const p=player;p.x=ST
   hadSave=false;gamePlayed=false;homePane(null);startPlay();});
 $('hmkeep').addEventListener('click',()=>homePane(null));
 $('hmset').addEventListener('click',()=>homePane('hmsettings'));
-$('hmhow').addEventListener('click',()=>homePane('hmhowto'));
 for(const b of document.querySelectorAll('#home .hm-back'))b.addEventListener('click',homeBack);
-for(const [id,pane] of[['psettings','hmsettings'],['phow','hmhowto']])$(id).addEventListener('click',ev=>{ev.stopPropagation();openHome(pane,'pause');});
+for(const [id,pane] of[['psettings','hmsettings']])$(id).addEventListener('click',ev=>{ev.stopPropagation();openHome(pane,'pause');});
 $('pmenu').addEventListener('click',ev=>{ev.stopPropagation();saveGame();openHome(null,'menu');});
 function syncSettingsUI(){for(const b of document.querySelectorAll('#gfxrow [data-gfx]'))b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
   for(const b of document.querySelectorAll('#sndrow [data-snd]'))b.setAttribute('aria-pressed',String((b.dataset.snd==='1')===AU.on));
-  $('setvol').value=Math.round(SET.vol*100);$('volout').textContent=Math.round(SET.vol*100)+'%';$('setsens').value=Math.round(SET.sens*100);$('sensout').textContent=SET.sens.toFixed(1)+'×';$('setinv').checked=!!SET.invY;
+  $('setvol').value=Math.round(SET.vol*100);$('volout').textContent=Math.round(SET.vol*100)+'%';$('setsens').value=Math.round(SET.sens*100);$('sensout').textContent=SET.sens.toFixed(1)+'×';$('setinv').checked=!!SET.invY;for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.setAttribute('aria-pressed',String((b.dataset.fy==='1')===(SET.fairy!==false)));
   $('gfxnote').textContent={fast:'Smoothest. Less grass, softer shadows.',auto:'Adjusts itself to keep the game smooth.',pretty:'Sharpest picture. Needs a strong computer.'}[GFX]+' Changing this restarts the game; your progress is kept.';}
 for(const b of document.querySelectorAll('#sndrow [data-snd]'))b.addEventListener('click',()=>{AU.on=b.dataset.snd==='1';SET.sound=AU.on;saveSet();applyVolume();syncSettingsUI();});
 $('setvol').addEventListener('input',e=>{SET.vol=+e.target.value/100;saveSet();applyVolume();$('volout').textContent=e.target.value+'%';});
 $('setsens').addEventListener('input',e=>{SET.sens=+e.target.value/100;saveSet();$('sensout').textContent=SET.sens.toFixed(1)+'×';});
 $('setinv').addEventListener('change',e=>{SET.invY=e.target.checked;saveSet();});
+for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.addEventListener('click',()=>{SET.fairy=b.dataset.fy==='1';saveSet();syncSettingsUI();});
 
 for(const b of document.querySelectorAll('#gfxrow [data-gfx]')){b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
   b.addEventListener('click',ev=>{ev.stopPropagation();if(b.dataset.gfx===GFX)return;try{localStorage.setItem('wizard-meadow-gfx',b.dataset.gfx);}catch(e){}if(hadSave||gamePlayed)saveGame();if(location.search)location.search='';else location.reload();});}
@@ -5012,7 +5075,7 @@ const SPELL_INFO=[
   'Makes you much faster and lets you jump higher for a short while.',
   'Freezes and knocks back everything around you.'];
 const STUDY_T=[0,40,60,90,120,160];
-const SKILL={level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},kills:0,up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[]};
+const SKILL={tut:0,level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},kills:0,up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[]};
 const maxHP=()=>100+10*(SKILL.level-1)+25*SKILL.up.robes;
 const xpNeed=L=>Math.round(80*Math.pow(L,1.4));
 const fireScale=()=>0.35+0.65*(SKILL.rank[0]-1)/4;
@@ -5768,15 +5831,15 @@ function bkKey(e){const k=e.code;
 /* save */
 const SAVEKEY='wizard-meadow-save-1';
 function queueSave(){saveT=time+1;}
-function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,v2:1}));}catch(_){}}
+function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,tut:SKILL.tut,v2:1}));}catch(_){}}
 function loadGame(){try{const d=JSON.parse(localStorage.getItem(SAVEKEY)||'null');if(!d||d.v!==1)return false;
-  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:(d.rank||[]).concat(Array(100).fill(0)).slice(0,100),gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},d.up||{}),tomesBought:d.tb||0,equip:d.equip||null,study:d.study||null,ws:d.ws||[],chests:d.chests||[]});
+  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:(d.rank||[]).concat(Array(100).fill(0)).slice(0,100),gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},d.up||{}),tomesBought:d.tb||0,equip:d.equip||null,study:d.study||null,ws:d.ws||[],chests:d.chests||[],tut:d.tut==null?99:d.tut});
   if(!d.v2){SKILL.inv.dust=(SKILL.inv.dust||0)+4;if(!SKILL.quests.grimoire)SKILL.quests.grimoire={state:'active',prog:0};}
   for(const c of CHESTS)if(!c.camp&&SKILL.chests.includes(c.id)){c.opened=true;c.open=1;chestMatrix(c);}refreshGlow();
   if(!SKILL.equip){SKILL.equip=[];SKILL.rank.forEach((r,i)=>{if(r&&SKILL.equip.length<5)SKILL.equip.push(i);});}while(SKILL.equip.length<5)SKILL.equip.push(-1);
   for(const w of WAYSTONES){if(SKILL.ws.includes(w.name))w.found=true;setWayLit(w);}COMBAT.kills=d.kills||0;return true;}catch(_){return false;}}
 function resetProgress(){try{localStorage.removeItem(SAVEKEY);}catch(_){}
-  Object.assign(SKILL,{level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[]});
+  Object.assign(SKILL,{tut:0,level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[]});
   for(const c of CHESTS)if(!c.camp){c.opened=false;c.open=0;chestMatrix(c);}refreshGlow();
   for(const w of WAYSTONES){w.found=w.name==='Meadow Crossing';setWayLit(w);}COMBAT.kills=0;
   for(const id of['grimoire','sparks','imps','village'])SKILL.quests[id]={state:'active',prog:0};
@@ -5883,7 +5946,7 @@ function updateNodes(dt){
   if(!player.dead)for(const o of NODES){if(!o.on)continue;const dx=player.x-o.x,dz=player.z-o.z;if(dx*dx+dz*dz>2.6||Math.abs(player.feet-o.y)>2)continue;
     o.on=false;o.back=time+fr(240,420);nodeMatrix(o);dirty=true;const n=Math.random()<0.1*SKILL.up.luck+0.15?2:1;
     const c=new T.Color(ITEMS[o.id].color);for(let q=0;q<24;q++){rsphere(_r,fr(1,3));PA.spawn(o.x,o.y+0.4,o.z,_r.x,Math.abs(_r.y)+1.5,_r.z,fr(0.4,0.9),0.22,0.03,c.r,c.g,c.b,1,1,1,1,2,1);}
-    SFX.gather();pickup(o.id,n);}
+    SFX.gather();pickup(o.id,n);tutEv('gather');}
   nodeScan-=dt;if(nodeScan<=0){nodeScan=1;
     for(const o of NODES)if(!o.on&&time>o.back&&Math.hypot(player.x-o.x,player.z-o.z)>30){o.on=true;nodeMatrix(o);dirty=true;}
     for(const c of CHESTS)if(c.camp){const v=!!c.camp.cleared;if(v!==c.vis){c.vis=v;if(!v){c.opened=false;c.open=0;}else if(Math.hypot(player.x-c.x,player.z-c.z)<120)feed('A chest is open to you at '+c.camp.name,'#ffd24a');chestMatrix(c);dirty=true;}}}
@@ -6084,7 +6147,7 @@ let mapOpen=false,mW=1,mH=1,mDpr=1;
 function sizeMap(){const r=mapC.getBoundingClientRect();mW=Math.max(1,r.width);mH=Math.max(1,r.height);mDpr=Math.min(2,window.devicePixelRatio||1);mapC.width=Math.round(mW*mDpr);mapC.height=Math.round(mH*mDpr);}
 const mapFit=()=>Math.min(mW,mH)/(PLAY_R*2+30);
 function clampView(){view.s=clamp(view.s,mapFit()*0.85,14);const L=PLAY_R+30;view.cx=clamp(view.cx,-L,L);view.cz=clamp(view.cz,-L,L);}
-function openMap(){
+function openMap(){tutEv('map');
   if(mapOpen)return;if(locked)try{document.exitPointerLock();}catch(_){}mapOpen=true;mapEl.hidden=false;for(const k in keys)keys[k]=false;ptrs.clear();joyId=null;joyX=joyY=0;joyEl.hidden=true;
   sizeMap();if(groundDirty){rebuildGround();groundDirty=false;}rebuildMap();mapDirty=false;
   view.cx=player.x*0.5;view.cz=player.z*0.5;view.s=mapFit()*(Math.min(mW,mH)<600?1.3:2.4);clampView();
@@ -6210,7 +6273,7 @@ function frame(now){
     sun.target.position.set(cx,0,cz);sun.position.set(cx+SUN.x*190,SUN.y*190,cz+SUN.z*190);sun.target.updateMatrixWorld();
   }
   if(paintDirty&&time>nextPaint){groundTex.needsUpdate=true;paintDirty=false;nextPaint=time+0.08;}
-  water.nt.offset.set(time*0.012,time*0.008);updateWaypoint();updateLandmarks(dt);updateXPOrbs(dt);
+  water.nt.offset.set(time*0.012,time*0.008);updateWaypoint();updateLandmarks(dt);updateXPOrbs(dt);updateFairy(Math.min(0.1,raw));updateTutorial(Math.min(0.1,raw));
   if((locked||hasHover)&&!touchMode&&ptrs.size===0&&!player.dead){
     if(frameN%2===0){const h=aim(locked?VW/2:hoverX,locked?VH/2:hoverY),s=SPELLS[selected];reticle.position.set(h.x,(h.piece>=0?h.y:h.gy)+0.12,h.z);reticle.scale.setScalar(s.r*0.5*(selected===0?fireScale()*1.4:1));reticle.material.color.copy(s.lin);reticle.rotation.y=time*0.6;}
     reticle.visible=cooldown<=0.05&&CD[selected]<=0.05;
