@@ -96,6 +96,8 @@ body.touch #hint{max-width:100%;margin-bottom:104px}
 #wave{align-self:flex-start;max-width:100%;padding:4px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font:600 12px/1.25 var(--ui);color:var(--text);font-variant-numeric:tabular-nums}
 body.touch #status{top:calc(env(safe-area-inset-top,0px) + 76px);bottom:auto;width:min(170px,44vw);flex-direction:column}
 body.touch #mute{top:calc(env(safe-area-inset-top,0px) + 140px)}
+body.touch #wave{white-space:nowrap;max-width:none}
+body.touch #mute{top:calc(env(safe-area-inset-top,0px) + 196px);right:max(16px,env(safe-area-inset-right,0px));left:auto}
 #strike{position:fixed;right:max(110px,calc(env(safe-area-inset-right,0px) + 102px));bottom:calc(env(safe-area-inset-bottom,0px) + 34px);width:62px;height:62px;border-radius:50%;
   background:rgba(12,18,26,.42);border:1.5px solid rgba(255,244,214,.45);color:var(--text);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1px;
   font:700 9px/1 var(--ui);letter-spacing:.1em;text-transform:uppercase;touch-action:none;pointer-events:auto;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
@@ -471,6 +473,10 @@ body.touch #bagbtn{display:block}
 #fybtns{display:flex;gap:8px;justify-content:flex-end}#fybtns[hidden],#fykeys[hidden],#fynext[hidden]{display:none}
 #fybtns .mbtn{height:34px;padding:0 12px;font-size:13px}
 body.home #fairy{display:none!important}
+body.touch #fairy{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 132px);left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));width:auto;max-width:460px;margin:0 auto;padding:11px 13px 10px}
+body.touch #fytext{font-size:14px}
+body.touch #fairy.fy-top{top:calc(env(safe-area-inset-top,0px) + 8px);bottom:auto}
+@media (max-height:500px){body.touch #fairy{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 84px);max-width:420px}body.touch #fairy.fy-top{top:calc(env(safe-area-inset-top,0px) + 8px)}body.touch #fairy .fy-foot{margin-top:6px}}
 @media (prefers-reduced-motion:reduce){#fairy.pop{animation:none}}
 .hm-side.pane{gap:14px}.hm-side.pane .hm-kicker,.hm-side.pane .hm-foot{display:none}.hm-side.pane .hm-title{font-size:34px}.hm-side.pane .hm-title span{display:inline}
 .hm-foot{margin-top:auto;font:500 12px/1.4 var(--ui);color:var(--muted)}
@@ -3313,7 +3319,7 @@ function setShadowSize(n){sun.shadow.mapSize.set(n,n);if(sun.shadow.map){sun.sha
 /* ── Pip, the fairy who wakes you and teaches you magic ── */
 const FAIRY={g:null,wings:[],glow:null,x:0,y:0,z:0,init:false,arrive:0};
 (function(){
-  const g=new T.Group(),bodyM=new T.MeshStandardMaterial({color:0xffd9b0,emissive:new T.Color(0xff9a3c),emissiveIntensity:0.45,roughness:0.5});
+  const g=new T.Group(),bodyM=new T.MeshStandardMaterial({color:0xffd9b0,emissive:new T.Color(0xff9a3c),emissiveIntensity:0.28,roughness:0.5});
   const body=new T.Mesh(new T.SphereGeometry(0.06,14,10),bodyM);body.scale.set(1,1.6,1);g.add(body);
   const head=new T.Mesh(new T.SphereGeometry(0.05,12,10),bodyM);head.position.y=0.13;g.add(head);
   const hair=new T.Mesh(new T.SphereGeometry(0.056,12,8,0,6.283,0,1.4),new T.MeshStandardMaterial({color:0xff6fb8,emissive:new T.Color(0x6a1a44),roughness:0.5}));hair.position.y=0.14;g.add(hair);
@@ -3345,8 +3351,8 @@ function tutEv(k){TS.ev[k]=(TS.ev[k]||0)+1;}
 function tutActive(){return SKILL.tut<TUT.length&&!homeOpen&&!player.dead;}
 function tutAdvance(){SKILL.tut++;TS.t=0;TS.ev={};TS.look=0;TS.walk=0;if(SKILL.tut>=TUT.length)SKILL.tut=99;queueSave();}
 function tutSkip(){SKILL.tut=99;queueSave();$('fairy').hidden=true;feed('Pip will keep quiet now','#ffd98a');}
-function tutShow(){const el=$('fairy');if(!tutActive()||paused()){el.hidden=true;TS.shown=-1;return;}
-  el.hidden=false;if(TS.shown===SKILL.tut)return;TS.shown=SKILL.tut;const st=TUT[SKILL.tut];
+function tutShow(){const el=$('fairy');if(!tutActive()||paused()||panelOpen||dialogOpen||mapOpen){el.hidden=true;TS.shown=-1;return;}
+  el.hidden=false;el.classList.toggle('fy-top',bookOpen||panelOpen||dialogOpen);if(TS.shown===SKILL.tut)return;TS.shown=SKILL.tut;const st=TUT[SKILL.tut];
   $('fytext').textContent=st.say();$('fystep').textContent=(SKILL.tut+1)+' / '+TUT.length;
   const keys=!touchMode&&!lockFailed;$('fykeys').hidden=!keys;$('fybtns').hidden=keys;$('fynext').hidden=!st.auto;
   $('fykeys').textContent=(st.auto?'Enter: next · ':'')+'T: skip tips';
@@ -3374,7 +3380,7 @@ function updateFairy(rdt){
   const k=1-Math.exp(-rdt*(gd?2.2:4.5));FAIRY.x+=(tx-FAIRY.x)*k;FAIRY.y+=(ty-FAIRY.y)*k;FAIRY.z+=(tz-FAIRY.z)*k;
   g.position.set(FAIRY.x+Math.sin(t*1.3)*0.05,FAIRY.y,FAIRY.z+Math.cos(t*1.1)*0.05);g.lookAt(camera.position.x,FAIRY.y,camera.position.z);
   const f=Math.sin(t*32);for(const w of FAIRY.wings)w.p.rotation.y=w.sx*(0.35+f*0.6);
-  FAIRY.glow.material.opacity=0.75+Math.sin(t*5)*0.15;
+  FAIRY.glow.material.opacity=0.45+Math.sin(t*5)*0.1;
   if(Math.random()<0.55)PA.spawn(g.position.x+fr(-0.05,0.05),g.position.y+fr(-0.05,0.05),g.position.z+fr(-0.05,0.05),fr(-0.15,0.15),fr(-0.4,-0.1),fr(-0.15,0.15),fr(0.5,0.9),0.05,0.01,1,0.9,0.6,1,1,0.6,0.9,0,0.4);
 }
 function updateFxPool(dt){
