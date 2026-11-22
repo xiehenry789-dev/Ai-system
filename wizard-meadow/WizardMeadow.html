@@ -426,6 +426,8 @@ body.touch #bagbtn{display:block}
 @keyframes slotReady{from{opacity:1;transform:scale(.92)}to{opacity:0;transform:scale(1.3)}}
 .slot.cast{animation:slotCast .3s ease-out}
 @keyframes slotCast{0%{transform:translateY(2px) scale(1.06)}30%{transform:translateY(6px) scale(.9)}100%{transform:translateY(2px) scale(1.06)}}
+#gfxrow{display:flex;align-items:center;justify-content:center;gap:6px;margin:4px 0 14px;font:600 13px/1 var(--ui);color:#cfd6e0}#gfxrow span{margin-right:4px}
+#gfxrow .mbtn{padding:6px 12px;min-height:0}#gfxrow .mbtn[aria-pressed="true"]{background:#ffd98a;color:#1a1408;border-color:#ffd98a}
 #dmg{position:fixed;inset:0;pointer-events:none;z-index:3;overflow:hidden}
 #dmg i{position:absolute;left:0;top:0;font:800 19px/1 var(--ui);font-style:normal;white-space:nowrap;text-shadow:0 2px 0 rgba(0,0,0,.6),0 0 10px rgba(0,0,0,.35);will-change:transform,opacity;opacity:0}
 #dmg i.big{font-size:27px}
@@ -467,6 +469,7 @@ body.touch #bagbtn{display:block}
       <dt>Monster levels</dt><dd>Grey and green are easy, white is even, orange is hard; a red skull is 3+ levels above you and will win</dd>
       <dt>Village well</dt><dd>Stand next to it to heal</dd>
     </dl>
+    <div id="gfxrow" role="group" aria-label="Graphics"><span>Graphics</span><button type="button" class="mbtn" data-gfx="fast">Fast</button><button type="button" class="mbtn" data-gfx="auto">Auto</button><button type="button" class="mbtn" data-gfx="pretty">Pretty</button></div>
     <button class="mbtn primary" id="playbtn" type="button">Click to play</button>
   </div>
 </div>
@@ -562,14 +565,16 @@ const T=THREE;
 /* ───────────────────────── config & helpers ───────────────────────── */
 const qs=new URLSearchParams(location.search);
 const COARSE=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
-const LOW=qs.get('q')==='low'||(COARSE&&qs.get('q')!=='high');
+let GFX='auto';try{GFX=localStorage.getItem('wizard-meadow-gfx')||'auto';}catch(e){}if(qs.get('q')==='low')GFX='fast';else if(qs.get('q')==='high')GFX='pretty';
+const LOW=GFX==='fast'||(COARSE&&GFX!=='pretty');
 const CFG={
-  grass:LOW?24000:56000, tile:LOW?46:60,
-  pr:Math.min(window.devicePixelRatio||1,LOW?1.5:2),
+  grass:LOW?24000:GFX==='pretty'?56000:42000, tile:LOW?46:60,
+  pr:Math.min(window.devicePixelRatio||1,GFX==='fast'?1:LOW?1.25:GFX==='pretty'?2:1.5),
   shadow:LOW?1024:2048, maxAwake:LOW?300:560, flowers:LOW?2800:4800,
   addCap:LOW?3500:7000, alphaCap:LOW?1600:3200
 };
 const pendingFx=[];
+const CULL={main:{value:null},shad:{value:null}},PROPCH=[],QUAL={shadR:115,lodR:LOW?420:650};
 let bookOpen=false,blockXP=0,VW=window.innerWidth,VH=window.innerHeight,mapDirty=true,groundDirty=true;
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 const rnd=mulberry(20261116);
@@ -820,8 +825,9 @@ const U={
   uTime:{value:0}, uCam:{value:new T.Vector3()}, uGround:{value:null}, uTile:{value:CFG.tile},
   uPush:{value:[new T.Vector4(0,0,1,0),new T.Vector4(0,0,1,0)]},
   uFlat:{value:[new T.Vector4(0,0,1,0),new T.Vector4(0,0,1,0)]},
-  uGustA:{value:new T.Vector4(0,0,1,0)}, uGustB:{value:new T.Vector4(0,3,0,0)}, uTreeGust:{value:0}
+  uGustA:{value:new T.Vector4(0,0,1,0)}, uGustB:{value:new T.Vector4(0,3,0,0)}, uTreeGust:{value:0}, uHM:{value:null}, uFwd:{value:new T.Vector2(0,-1)}
 };
+CULL.main.value=new T.Vector4(0,0,1e6,0);CULL.shad.value=new T.Vector4(0,0,1e6,0);
 const GLSL_WIND=`
 uniform float uTime; uniform vec4 uPush[2]; uniform vec4 uGustA; uniform vec4 uGustB; uniform float uTreeGust;
 vec2 fxWind(vec2 w){
@@ -979,23 +985,40 @@ const detailTex=(function(){ // tileable grain so close-up ground never looks sm
     const a=Math.sin(u*3+v*5)*0.3+Math.sin(u*7-v*4+1.7)*0.25+Math.sin(u*13+v*11+0.4)*0.2+Math.sin(u*29-v*23+2.2)*0.15+Math.sin(u*47+v*41)*0.1;
     const b=Math.sin(u*2+v*1+0.3)*0.5+Math.sin(u*1-v*3+1.1)*0.5,k=(j*N+i)*4;d[k]=128+a*120;d[k+1]=128+b*110;d[k+2]=128;d[k+3]=255;}
   x.putImageData(img,0,0);const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;return t;})();
+/* the ground: one height grid shared by tiles (full detail near you, coarse far away) and by the grass */
+const TERR={N:0,W:4400,st:0,tiles:[]};
 (function(){
-  const S=LOW?380:600,g=new T.PlaneGeometry(4400,4400,S,S);g.rotateX(-Math.PI/2);
-  const p=g.attributes.position,uv=g.attributes.uv,col=new Float32Array(p.count*3);
-  for(let i=0;i<p.count;i++){
-    const x=p.getX(i),z=p.getZ(i),h=groundH(x,z),r=Math.hypot(x,z);p.setY(i,h);
-    uv.setXY(i,x/TEXW+0.5,0.5-z/TEXW);biomeW(x,z,_bw);
-    const far=smooth(1700,2200,r),n=fbm(x*0.02+3,z*0.02+3),k=lerp(1,0.72+n*0.4,smooth(1660,1730,r))*(1-0.55*_bw[1]-0.45*_bw[9]),
+  const S=LOW?380:600,W=TERR.W,st=W/S,N=S+1;TERR.N=N;TERR.st=st;
+  const H=new Float32Array(N*N),C=new Float32Array(N*N*3),NR=new Float32Array(N*N*3);
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    const x=-W/2+i*st,z=-W/2+j*st,k=j*N+i,h=groundH(x,z),r=Math.hypot(x,z);H[k]=h;biomeW(x,z,_bw);
+    const far=smooth(1700,2200,r),n=fbm(x*0.02+3,z*0.02+3),kk=lerp(1,0.72+n*0.4,smooth(1660,1730,r))*(1-0.55*_bw[1]-0.45*_bw[9]),
       snow=smooth(42,62,h)*clamp(1-_bw[1]*1.2-_bw[2]*0.9-_bw[3]*0.6-_bw[5]*1.2-_bw[6]*0.9-_bw[7]*0.4-_bw[9]*1.6-_bw[10]*1.2-_bw[11],0,1),lav=_bw[4];
-    col[i*3]=lerp(k*lerp(1,0.8,far),1.6-0.3*lav,snow);col[i*3+1]=lerp(k*lerp(1,0.92,far),1.65-0.45*lav,snow);col[i*3+2]=lerp(k*lerp(1,1.15,far),1.8,snow);
+    C[k*3]=lerp(kk*lerp(1,0.8,far),1.6-0.3*lav,snow);C[k*3+1]=lerp(kk*lerp(1,0.92,far),1.65-0.45*lav,snow);C[k*3+2]=lerp(kk*lerp(1,1.15,far),1.8,snow);
   }
-  g.setAttribute('color',new T.BufferAttribute(col,3));g.computeVertexNormals();
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){const k=j*N+i,hl=H[j*N+Math.max(0,i-1)],hr=H[j*N+Math.min(N-1,i+1)],hd=H[Math.max(0,j-1)*N+i],hu=H[Math.min(N-1,j+1)*N+i];
+    const nx=hl-hr,ny=2*st,nz=hd-hu,l=Math.hypot(nx,ny,nz);NR[k*3]=nx/l;NR[k*3+1]=ny/l;NR[k*3+2]=nz/l;}
+  // height texture for the grass: 16 bits per texel, read with a manual bilinear blend
+  {const d=new Uint8Array(N*N*4);for(let k=0;k<N*N;k++){const v=Math.round(clamp((H[k]+40)/300,0,1)*65535);d[k*4]=v>>8;d[k*4+1]=v&255;d[k*4+3]=255;}
+    const t=new T.DataTexture(d,N,N,T.RGBAFormat);t.magFilter=t.minFilter=T.NearestFilter;t.wrapS=t.wrapT=T.ClampToEdgeWrapping;t.generateMipmaps=false;t.needsUpdate=true;U.uHM.value=t;}
   const mat=new T.MeshLambertMaterial({map:groundTex,vertexColors:true});
   mat.onBeforeCompile=sh=>{sh.uniforms.uDetail={value:detailTex};
     sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vWXZ;').replace('#include <begin_vertex>','#include <begin_vertex>\nvWXZ=position.xz;');
     sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec2 vWXZ;uniform sampler2D uDetail;')
       .replace('#include <map_fragment>','#include <map_fragment>\n{vec4 dt=texture2D(uDetail,vWXZ*0.31),dg=texture2D(uDetail,vWXZ*0.043);diffuseColor.rgb*=mix(0.84,1.14,dt.r)*mix(0.9,1.08,dg.g);}');};
-  const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);
+  const TN=LOW?10:12,seg=S/TN,qLow=seg%5===0?5:seg%2===0?2:1;
+  const tile=(ti,tj,q)=>{const n=seg/q+1,i0=ti*seg,j0=tj*seg,pos=[],nor=[],col=[],uv=[],idx=[];
+    const put=(i,j,dy)=>{const k=j*N+i,x=-W/2+i*st,z=-W/2+j*st;pos.push(x,H[k]+dy,z);nor.push(NR[k*3],NR[k*3+1],NR[k*3+2]);col.push(C[k*3],C[k*3+1],C[k*3+2]);uv.push(x/TEXW+0.5,0.5-z/TEXW);return pos.length/3-1;};
+    for(let b=0;b<n;b++)for(let a=0;a<n;a++)put(i0+a*q,j0+b*q,0);
+    for(let b=0;b<n-1;b++)for(let a=0;a<n-1;a++){const A=b*n+a,B=A+n,Cc=A+1,D=B+1;idx.push(A,B,Cc,Cc,B,D);}
+    // skirts hide the hairline cracks where a detailed tile meets a coarse one
+    const edge=(list)=>{for(let e=0;e<list.length-1;e++){const [a0,b0]=list[e],[a1,b1]=list[e+1],u0=b0*n+a0,u1=b1*n+a1,d0=put(i0+a0*q,j0+b0*q,-5),d1=put(i0+a1*q,j0+b1*q,-5);idx.push(u0,d0,u1,u1,d0,d1,u0,u1,d0,u1,d1,d0);}};
+    const L=[];for(let a=0;a<n;a++)L.push([a,0]);edge(L);L.length=0;for(let a=0;a<n;a++)L.push([a,n-1]);edge(L);L.length=0;for(let b=0;b<n;b++)L.push([0,b]);edge(L);L.length=0;for(let b=0;b<n;b++)L.push([n-1,b]);edge(L);
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('normal',new T.Float32BufferAttribute(nor,3));
+    g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeBoundingSphere();
+    const m=new T.Mesh(g,mat);m.receiveShadow=true;scene.add(m);return m;};
+  for(let tj=0;tj<TN;tj++)for(let ti=0;ti<TN;ti++){const full=tile(ti,tj,1),low=qLow>1?tile(ti,tj,qLow):full;low.visible=false;
+    const half=seg*st/2;TERR.tiles.push({x:-W/2+(ti*seg)*st+half,z:-W/2+(tj*seg)*st+half,r:half*1.42,full,low});}
 })();
 const water=(function(){ // lake: normal-mapped water disc
   const N=256,c=document.createElement('canvas');c.width=c.height=N;const x=c.getContext('2d'),img=x.createImageData(N,N),d=img.data;
@@ -1103,7 +1126,10 @@ const clouds=[];
   const g=new T.BufferGeometry();
   g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setAttribute('normal',new T.Float32BufferAttribute(nrm,3));
   const mat=patchMat(new T.MeshLambertMaterial({side:T.DoubleSide}),{
-    vpars:`uniform vec3 uCam;uniform float uTile;uniform sampler2D uGround;uniform vec4 uFlat[2];varying vec3 vGcol;varying float vFrost;\n`+GLSL_GROUND,
+    vpars:`uniform vec3 uCam;uniform float uTile;uniform sampler2D uGround;uniform vec4 uFlat[2];uniform sampler2D uHM;uniform vec2 uFwd;varying vec3 vGcol;varying float vFrost;\n`+GLSL_GROUND+`
+float hmAt(vec2 ij){vec4 t=texture2D(uHM,(ij+0.5)/${TERR.N}.0);return (t.r*65280.0+t.g*255.0)/65535.0*300.0-40.0;}
+float groundHM(vec2 p){vec2 g=clamp((p+${TERR.W/2}.0)/${TERR.st.toFixed(6)},vec2(0.0),vec2(${TERR.N-2}.0));vec2 i=floor(g),f=g-i;return mix(mix(hmAt(i),hmAt(i+vec2(1.0,0.0)),f.x),mix(hmAt(i+vec2(0.0,1.0)),hmAt(i+vec2(1.0,1.0)),f.x),f.y);}
+`,
     project:`
       vec4 ip=instanceMatrix*vec4(0.0,0.0,0.0,1.0);
       vec2 rel=mod(ip.xz-uCam.xz+uTile*0.5,uTile)-uTile*0.5;
@@ -1113,8 +1139,9 @@ const clouds=[];
       float alive=smoothstep(0.05,0.2,lum);
       float dirt=smoothstep(-0.14,-0.04,gc.r-gc.g);
       float frost=smoothstep(0.0,0.1,gc.b-gc.g);
-      float gh0=groundH(wxz);
-      float hs=step(waterY(wxz)+0.12,gh0)*mix(0.2,1.0,alive)*(1.0-dirt)*(1.0-smoothstep(uTile*0.34,uTile*0.49,length(rel)));
+      float vis=max(step(-0.42,dot(normalize(rel+vec2(1e-4)),uFwd)),step(length(rel),4.0));
+      float gh0=vis>0.0?groundHM(wxz):0.0;
+      float hs=(vis>0.0?step(waterY(wxz)+0.12,gh0):0.0)*mix(0.2,1.0,alive)*(1.0-dirt)*(1.0-smoothstep(uTile*0.34,uTile*0.49,length(rel)));
       for(int i=0;i<2;i++){hs*=1.0-uFlat[i].w*(1.0-smoothstep(uFlat[i].z*0.8,uFlat[i].z*1.08,length(wxz-uFlat[i].xy)));}
       float rn=fract(sin(dot(ip.xz,vec2(12.9898,78.233)))*43758.5453);
       vec3 lp=transformed; lp.y*=hs; lp.xz*=step(0.05,hs);
@@ -2086,6 +2113,9 @@ finalizePieces();
   x.strokeStyle='rgba(30,26,22,0.25)';x.lineWidth=16;x.strokeRect(0,0,128,128);
   const tex=new T.CanvasTexture(c);tex.encoding=T.sRGBEncoding;
   pieceMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshStandardMaterial({map:tex,roughness:0.9,metalness:0}),MAXP);
+  {const cullV=u=>sh=>{sh.uniforms.uCull=u;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform vec4 uCull;')
+      .replace('#include <project_vertex>','#include <project_vertex>\n{vec4 ic=modelMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0);if(distance(ic.xz,uCull.xy)>uCull.z)gl_Position=vec4(0.0,0.0,-2.0,1.0);}');};
+    pieceMesh.material.onBeforeCompile=cullV(CULL.main);const dm=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking});dm.onBeforeCompile=cullV(CULL.shad);pieceMesh.customDepthMaterial=dm;}
   const col=new T.Color();
   for(let i=0;i<pn;i++){writeMatrix(i);col.setRGB(pcol[i*3],pcol[i*3+1],pcol[i*3+2]);pieceMesh.setColorAt(i,col);}
   pieceMesh.count=pn;pieceMesh.frustumCulled=false;pieceMesh.castShadow=true;pieceMesh.receiveShadow=true;scene.add(pieceMesh);
@@ -2646,14 +2676,19 @@ function collideProps(o,r){const fy=o.feet!=null?o.feet:(o.y!=null?o.y:-1e9),cx=
   const place={pine:[[0],LOW?300:520,0.5,0.3],cactus:[[2,5],LOW?150:260,0.55,0.3],dead:[[1,3,7,9],LOW?270:470,0.5,0.3],shroom:[[3,6,11],LOW?170:310,0.55,0.25],spire:[[1,9],LOW?210:380,0.55,0.75],
     palm:[[10],LOW?260:480,0.5,0.3],coral:[[10],LOW?220:420,0.4,0],gshroom:[[11],LOW?420:760,0.5,0.55],obsid:[[9],LOW?230:420,0.5,0.6],windtree:[[8],LOW?300:560,0.5,0.35],pillar:[[8],LOW?40:80,0.6,1.4],
     crystal:[[4,8],LOW?190:330,0.5,0.6],mesa:[[5],LOW?40:70,0.6,2.6],jtree:[[6],LOW?160:280,0.5,0.55],fern:[[6],LOW?220:420,0.45,0],grave:[[7],LOW?140:240,0.5,0.35]};
+  const PCS=220,addChunk=(geo,pm,L,k)=>{const g2=new T.BufferGeometry();for(const a in geo.attributes)g2.setAttribute(a,geo.attributes[a]);
+    const im=new T.InstancedMesh(g2,pm,L.length);let sx=0,sy=0,sz=0;for(let i=0;i<L.length;i++){im.setMatrixAt(i,L[i]);const e=L[i].elements;sx+=e[12];sy+=e[13];sz+=e[14];}
+    const cx=sx/L.length,cy=sy/L.length,cz=sz/L.length;let r=0;for(const m of L){const e=m.elements;r=Math.max(r,Math.hypot(e[12]-cx,e[13]-cy,e[14]-cz));}r+=PROP_H[k]*2.2+3;
+    g2.boundingSphere=new T.Sphere(new T.Vector3(cx,cy,cz),r);im.castShadow=k!=='fern'&&k!=='coral';im.receiveShadow=true;scene.add(im);
+    PROPCH.push({m:im,x:cx,z:cz,r,cast:im.castShadow,small:k==='fern'||k==='coral'||k==='grave'});};
   for(const k in place){
-    const [bl,count,minW,cr]=place[k],geo=KINDS[k](),mesh=new T.InstancedMesh(geo,k==='crystal'?glowMatP:k==='gshroom'?glowMatF:mat,count);let n=0,g=0;
+    const [bl,count,minW,cr]=place[k],geo=KINDS[k](),pm=k==='crystal'?glowMatP:k==='gshroom'?glowMatF:mat,cells=new Map();let n=0,g=0;
     while(n<count&&g++<count*40){const b=bl[Math.floor(rnd()*bl.length)],outer=b>=8,diag=b>=4&&!outer,a=BIOMES[b].a+rr(diag?-0.45:-0.85,diag?0.45:0.85),R=outer?rr(OUT2+20,PLAY_R+80):diag?rr(OUT0-20,OUT3+20):rr(RING0+20,OUT3+20),x=Math.cos(a)*R,z=Math.sin(a)*R;
       biomeW(x,z,_bw);if(_bw[b]<minW)continue;if(k==='coral'){const gh=groundH(x,z);if(gh>SEA_Y-0.25||gh<SEA_Y-3.4||R>PLAY_R)continue;}else if(R<PLAY_R+5&&avoid(x,z,k==='mesa'?6:2))continue;if(WAYSTONES.some(w=>Math.hypot(w.x-x,w.z-z)<(k==='mesa'?9:4)))continue;
       const s=k==='shroom'?rr(0.8,2.2):k==='spire'?rr(0.7,2):k==='mesa'?rr(0.9,1.8):k==='jtree'?rr(0.9,1.5):k==='crystal'?rr(0.7,1.9):k==='gshroom'?rr(0.7,1.5):k==='pillar'?rr(0.7,1.5):k==='coral'?rr(0.7,1.8):rr(0.8,1.5);
-      _P.set(x,groundH(x,z)-0.1,z);_Q.setFromEuler(new T.Euler(rr(-0.06,0.06),rnd()*6.28,rr(-0.06,0.06)));const sy=s*(k==='spire'?rr(0.8,1.6):1);_S.set(s,sy,s);_M.compose(_P,_Q,_S);mesh.setMatrixAt(n++,_M);
+      _P.set(x,groundH(x,z)-0.1,z);_Q.setFromEuler(new T.Euler(rr(-0.06,0.06),rnd()*6.28,rr(-0.06,0.06)));const sy=s*(k==='spire'?rr(0.8,1.6):1);_S.set(s,sy,s);_M.compose(_P,_Q,_S);n++;{const key=Math.floor(x/PCS)+'_'+Math.floor(z/PCS);let L=cells.get(key);if(!L){L=[];cells.set(key,L);}L.push(_M.clone());}
       if(cr>0)propAdd(x,z,cr*s,groundH(x,z)+PROP_H[k]*sy);}
-    mesh.count=n;mesh.frustumCulled=false;mesh.castShadow=k!=='fern'&&k!=='coral';mesh.receiveShadow=true;scene.add(mesh);
+    for(const L of cells.values())addChunk(geo,pm,L,k);
   }
 })();
 /* waystones: discover them on foot, then travel between them from the map */
@@ -3202,6 +3237,17 @@ function updateXPOrbs(dt){
   // never lose experience, however the orbs fare
   for(let k=XO.batches.length-1;k>=0;k--){const b=XO.batches[k];if(time-b.t>5){for(const o of XO.list)if(o.on&&o.b===b){o.on=false;o.s.visible=false;XO.free.push(o);}xpBatchDone(b);}}
 }
+/* drawing only what you can see: scenery squares inside the fog, nearby shadows, detailed ground close by */
+const _cfw=new T.Vector3();let cullT=0;
+function updateCulling(dt){
+  const cx=camera.position.x,cz=camera.position.z,fogR=clamp(1.95/scene.fog.density,320,1800);
+  CULL.main.value.set(cx,cz,fogR+30,0);CULL.shad.value.set(player.x,player.z,QUAL.shadR,0);
+  camera.getWorldDirection(_cfw);{const l=Math.hypot(_cfw.x,_cfw.z);if(l>0.2)U.uFwd.value.set(_cfw.x/l,_cfw.z/l);else U.uFwd.value.set(0,0);}
+  cullT-=dt;if(cullT>0)return;cullT=0.15;
+  for(const c of PROPCH){const d=Math.hypot(c.x-cx,c.z-cz)-c.r;c.m.visible=d<(c.small?Math.min(fogR,240):fogR);c.m.castShadow=c.cast&&Math.hypot(c.x-player.x,c.z-player.z)-c.r<QUAL.shadR;}
+  for(const t of TERR.tiles){const d=Math.hypot(t.x-cx,t.z-cz)-t.r,vis=d<fogR+80,near=d<QUAL.lodR;if(t.low===t.full)t.full.visible=vis;else{t.full.visible=vis&&near;t.low.visible=vis&&!near;}}
+}
+function setShadowSize(n){sun.shadow.mapSize.set(n,n);if(sun.shadow.map){sun.shadow.map.dispose();sun.shadow.map=null;}}
 function updateFxPool(dt){
   for(const o of FXP.fl){if(!o.s.visible)continue;o.t+=dt;const k=o.t/o.d;if(k>=1){o.s.visible=false;continue;}const e=1-(1-k)*(1-k);o.s.scale.setScalar(o.r*(0.4+0.8*e));o.s.material.opacity=(1-k)*(1-k);}
   for(const o of FXP.sh){if(!o.m.visible)continue;o.t+=dt;const k=o.t/o.d;if(k>=1){o.m.visible=false;continue;}const e=1-Math.pow(1-k,3),r=Math.max(0.01,o.r0+(o.r1-o.r0)*e);
@@ -4566,6 +4612,8 @@ function updatePause(){
   $('playbtn').textContent=lockWorked?'Resume':'Click to play';$('ptitle').textContent=lockWorked?'Paused':'Wizard Meadow';
 }
 pauseEl.addEventListener('click',()=>{audioInit();firstInput();requestLock();});
+for(const b of document.querySelectorAll('#gfxrow [data-gfx]')){b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
+  b.addEventListener('click',ev=>{ev.stopPropagation();if(b.dataset.gfx===GFX)return;try{localStorage.setItem('wizard-meadow-gfx',b.dataset.gfx);}catch(e){}saveGame();if(location.search)location.search='';else location.reload();});}
 $('rise').addEventListener('click',()=>{audioInit();respawn();});
 $('vclose').addEventListener('click',()=>{victoryOpen=false;$('victory').hidden=true;updatePause();requestLock();});
 canvas.addEventListener('mousedown',e=>{
@@ -6018,6 +6066,7 @@ if(window.visualViewport)visualViewport.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,300));
 if(window.ResizeObserver)new ResizeObserver(()=>resize()).observe(canvas);
 resize();selectSpell(0,true);
+let fastT=0;
 let last=performance.now(),acc=0,frameN=0,slowT=0,nextThud=0,fpsAvg=16,nextPaint=0,nextMapBuild=0;
 const fogBase=FOGC.clone();
 function frame(now){
@@ -6051,7 +6100,7 @@ function frame(now){
   treeGust*=Math.exp(-dt*1.4);U.uTreeGust.value=treeGust;
   mill.boost*=Math.exp(-dt*0.45);mill.sails.rotation.z-=dt*(mill.spin+mill.boost);
   for(const c of clouds){c.position.x+=dt*1.6;if(c.position.x>2600)c.position.x=-2600;}
-  updateCamera(dt);updateStaff(dt);
+  updateCamera(dt);updateStaff(dt);updateCulling(dt);
   U.uTime.value=time;U.uCam.value.copy(camBase);
   sky.position.copy(camera.position);
   { // keep the shadow frustum centred on the player, snapped to texels to avoid shimmer
@@ -6069,7 +6118,12 @@ function frame(now){
   if(frameN%2===0)drawMini();
   // drop resolution a little if the device is struggling
   fpsAvg+=(raw*1000-fpsAvg)*0.05;
-  if(time>4&&fpsAvg>30){slowT+=dt;if(slowT>2.5&&PR>0.8){PR=Math.max(0.75,PR*0.8);grassMesh.count=Math.max(12000,Math.floor(grassMesh.count*0.75));resize();slowT=0;}}else slowT=0;
+  // keep it smooth: step quality down when frames run long, and back up when there is room
+  if(time>4&&!paused()){if(fpsAvg>24){fastT=0;slowT+=raw;if(slowT>1.6){slowT=0;
+      if(PR>0.75){PR=Math.max(0.7,PR*0.85);resize();}else if(grassMesh.count>12000)grassMesh.count=Math.max(12000,Math.floor(grassMesh.count*0.75));
+      else if(sun.shadow.mapSize.x>1024)setShadowSize(1024);else if(QUAL.lodR>300)QUAL.lodR=300;}}
+    else if(fpsAvg<15&&GFX!=='fast'){slowT=0;fastT+=raw;if(fastT>6){fastT=0;if(grassMesh.count<CFG.grass)grassMesh.count=Math.min(CFG.grass,Math.floor(grassMesh.count*1.2));else if(PR<CFG.pr){PR=Math.min(CFG.pr,PR*1.1);resize();}}}
+    else{slowT=Math.max(0,slowT-raw*0.5);fastT=0;}}
 }
 requestAnimationFrame(frame);
 window.__wm={toggleBroom,flyPlayer,BROOM,keys,openBook,closeBook,bkGo,bkGoPage,bkSetup,bkPose,BK,NODES,CHESTS,SPELLS,CD,ROAMERS,learnSpell,openChest,pickup,BIOMES,cast2:(i,x,z,e)=>{const ry=groundH(x,z),h={x,y:ry,z,gy:ry,piece:-1,tree:-1,dist:10,enemy:e||null};if(SPELLS[i].mode){SPELL_FX[i](h);}else{const rune=spawnRune(i,x,ry,z);CASTERS[i](h,rune);}},openShop,fire:(x,y,z)=>launchFireball({x,y,z,gy:groundH(x,z),piece:0}),player,SKILL,gainXP,openPanel,openDialog,VILLAGERS,dropItem,enemies,COMBAT,CAMPS,BOSS,VILLAGES,CROWN,spawn:(t,x,z)=>spawnEnemy(t,x,z),skipLock:()=>{lockFailed=true;updatePause();},openMap,closeMap,setWp:(x,z)=>{waypoint={x,z};},cast:(i,x,z)=>{selectSpell(i,true);cooldown=0;const ry=groundH(x,z),h={x,y:ry,z,gy:ry,piece:-1,tree:-1,dist:10};const rune=spawnRune(i,x,ry,z);castT=0;CASTERS[i](h,rune);},
