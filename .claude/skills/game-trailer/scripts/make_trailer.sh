@@ -17,5 +17,5 @@ cp "$(ls "$WORK"/frames/cuts-*.json | head -1)" "$WORK/frames/cuts.json"
 i=0;mkdir -p "$WORK/seq";for f in $(ls "$WORK"/frames/s*_*.jpg | sort); do ln -sf "$f" "$WORK/seq/$(printf 'f%05d.jpg' $i)";i=$((i+1));done
 echo "frames: $i"
 python3 "$HERE/music.py" "$WORK/frames/cuts.json" "$WORK/music.wav"
-ffmpeg -y -loglevel error -framerate "$FPS" -i "$WORK/seq/f%05d.jpg" -i "$WORK/music.wav" -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart "$OUT"
+ffmpeg -y -loglevel error -framerate "$FPS" -i "$WORK/seq/f%05d.jpg" -i "$WORK/music.wav" -vf "drawbox=x=0:y=ih-16:w=150:h=16:color=black:t=fill" -c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart "$OUT"
 echo "trailer: $OUT"

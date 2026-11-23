@@ -34,7 +34,7 @@ let three=null;try{three=fs.readFileSync(require.resolve('three/build/three.min.
   const cdp=await ctx.newCDPSession(pg);let lastFrame=null,waiter=null;
   cdp.on('Page.screencastFrame',ev=>{cdp.send('Page.screencastFrameAck',{sessionId:ev.sessionId}).catch(()=>{});lastFrame=ev.data;if(waiter){const w=waiter;waiter=null;w();}});
   await cdp.send('Page.startScreencast',{format:'jpeg',quality:90,maxWidth:W,maxHeight:H,everyNthFrame:1});
-  const nextFrame=()=>new Promise(r=>{waiter=r;setTimeout(()=>{if(waiter===r){waiter=null;r();}},60000);});
+  const nextFrame=(ms)=>new Promise(r=>{waiter=r;setTimeout(()=>{if(waiter===r){waiter=null;r();}},ms||60000);});let idCache={d:null,v:-1};
   const cuts=[];let n=0,t=0;
   const only=process.env.TRAILER_ONLY?process.env.TRAILER_ONLY.split(',').map(Number):null; // e.g. TRAILER_ONLY=3,8 to test a few shots
   for(const s of shots){cuts.push(+t.toFixed(3));t+=Math.round(s.dur*FPS)/FPS;} // timings of the whole trailer, whichever shots this run records
@@ -58,11 +58,12 @@ let three=null;try{three=fs.readFileSync(require.resolve('three/build/three.min.
         if(S.logo){sh('WIZARD MEADOW',H*0.42,Math.round(H*0.12),'#ffd98a',fade(0.12,0.3),'700');sh('P L A Y   N O W',H*0.58,Math.round(H*0.035),'#f6efdc',S.logo===2?fade(0.1,0.3):fade(0.6,0.25));}
         window.__stamp=(window.__stamp||0)+1;x.globalAlpha=1;x.shadowBlur=0;for(let b=0;b<12;b++){x.fillStyle=(window.__stamp>>b)&1?'#fff':'#000';x.fillRect(8+b*10,H-12,8,8);} // frame number for the capture to check
         return new Promise(r=>{window.__vt.t+=dt*1000;window.__vt.res=r;window.__vt.go=true;});},[si,f,frames,1/FPS,W,H]);
-      if(f>=0){const want=await pg.evaluate(()=>window.__stamp&4095);let got=null; // wait for the screencast frame that carries this frame's number
-        for(let tries=0;tries<40&&!got;tries++){lastFrame=null;await nextFrame();if(!lastFrame)continue;
-          const id=await pg.evaluate(async([d,H])=>{const im=new Image();im.src='data:image/jpeg;base64,'+d;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
-            const k=im.height/H;let v=0;for(let b=0;b<12;b++){const px=x.getImageData(Math.round((12+b*10)*k),Math.round((H-8)*k),1,1).data;if(px[0]>128)v|=1<<b;}return v;},[lastFrame,H]);
-          if(id===want)got=lastFrame;else if(id>want&&id-want<2000)got=lastFrame;}
+      if(f>=0){const want=await pg.evaluate(()=>window.__stamp&4095);let got=null; // use the screencast frame that carries this frame's number
+        for(let tries=0;tries<30&&!got;tries++){const cand=lastFrame;
+          if(cand){const id=cand===idCache.d?idCache.v:await pg.evaluate(async([d,H])=>{const im=new Image();im.src='data:image/jpeg;base64,'+d;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+              const k=im.height/H;let v=0;for(let b=0;b<12;b++){const px=x.getImageData(Math.round((12+b*10)*k),Math.round((H-8)*k),1,1).data;if(px[0]>128)v|=1<<b;}return v;},[cand,H]);
+            idCache={d:cand,v:id};if(id===want){got=cand;break;}}
+          await nextFrame(4000);}
         if(!got)console.log('warning: frame',si,f,'was not matched');lastFrame=got||lastFrame;
         if(lastFrame){fs.writeFileSync(path.join(OUT,'s'+String(si).padStart(2,'0')+'_'+String(k++).padStart(5,'0')+'.jpg'),Buffer.from(lastFrame,'base64'));n++;if(n%50===0)console.log('frame',n);}}}
     }

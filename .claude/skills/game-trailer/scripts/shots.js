@@ -10,8 +10,10 @@ const dolly=(x0,z0,y0,x1,z1,y1,tx,tz,p0,p1)=>u=>{const e=ease(u),x=lerp(x0,x1,e)
 const hv=V('Highwatch'),bh=V('Brookhollow');
 // an open patch of desert: no trees or grass between the camera and the monsters
 const AX=60,AZ=360,AY=()=>gH(AX,AZ);
-const arena=()=>{W.cleanup();P.max=P.hp=1e7;W.COMBAT.on=true;};
-const mob=(t,dx,dz,o)=>{const e=W.spawn(t,AX+dx,AZ+dz);e.aggro=true;Object.assign(e,o||{});e.yaw=e.yawT=Math.PI;return e;};
+const arena=()=>{W.cleanup();MOBS.length=0;P.max=P.hp=1e7;W.COMBAT.on=true;};
+const MOBS=[];const mob=(t,dx,dz,o)=>{const e=W.spawn(t,AX+dx,AZ+dz);e.aggro=true;Object.assign(e,o||{});e.yaw=e.yawT=Math.PI;e.pin=[AX+dx,AZ+dz];MOBS.push(e);return e;};
+// keep hero monsters on their marks, facing the camera, still animating (walking, flapping) as if charging
+const pin=()=>{for(const e of MOBS){if(e.state==='dead'||!e.pin)continue;e.x=e.pin[0];e.z=e.pin[1];e.vx=0;e.vz=-0.0001;e.yawT=Math.PI;e.phase+=0.35;}};
 // hero shot: camera low in front of the monster, slowly pushing in and tilting up
 const hero=(dist0,dist1,h0,h1,p0,p1)=>u=>{const e=ease(u),d=lerp(dist0,dist1,e);return {x:AX,z:AZ-d,y:AY()+lerp(h0,h1,e),yaw:look(AX,AZ-d,AX,AZ),pitch:lerp(p0,p1,e),shake:0};};
 const spellCut=(sp,ox,oz,slam)=>({dur:1.7,slam,flash:1,setup(){for(let i=0;i<100;i++)W.SKILL.rank[i]=Math.max(W.SKILL.rank[i],4);},
@@ -25,12 +27,12 @@ return [
  spellCut(SP.bolt,-6,4,''),
  spellCut(SP.tornado,5,6,''),
  {...spellCut(SP.frost,-3,-5,'UNLEASH THEM'),dur:2.2},
- {dur:2.0,slam:'TREANTS',flash:1,setup(){arena();mob('oakheart',0,0);},cam:hero(9,7,1.0,1.1,0.32,0.38)},
- {dur:2.0,slam:'WYRMS',flash:1,setup(){arena();mob('ashwyrm',0,0,{state:'exposed',under:false,sink:0,t:0});},cam:hero(10,8,1.0,1.2,0.36,0.42),act(u,f){const e=W.enemies.find(e=>e.type==='ashwyrm');if(e){e.state='exposed';e.t=0.5;e.under=false;e.sink=0;}}},
- {dur:2.0,slam:'GRIFFINS',flash:1,setup(){arena();mob('griffin',0,0);mob('griffin',-3,2);mob('griffin',3,2.5);},cam:hero(8,5.5,0.9,1.0,0.12,0.16)},
+ {dur:2.0,slam:'TREANTS',flash:1,setup(){arena();mob('oakheart',0,0);},cam:hero(13,10,1.6,1.8,0.1,0.13),act:pin},
+ {dur:2.0,slam:'WYRMS',flash:1,setup(){arena();mob('ashwyrm',0,0,{state:'exposed',under:false,sink:0,t:0});},cam:hero(13,10.5,1.6,1.8,0.12,0.15),act(u,f){pin();const e=W.enemies.find(e=>e.type==='ashwyrm');if(e){e.state='exposed';e.t=0.5;e.under=false;e.sink=0;}}},
+ {dur:2.0,slam:'GRIFFINS',flash:1,setup(){arena();mob('griffin',0,0);mob('griffin',-3.5,3);mob('griffin',3.5,3.5);},cam:hero(10,7.5,1.3,1.4,0.02,0.04),act:pin},
  {dur:3.2,slam:'50+ MONSTERS',flash:1,setup(){arena();mob('oakheart',-4,6);mob('ashwyrm',5,7,{state:'exposed',under:false,sink:0,t:0});mob('griffin',1,3);mob('greenslime',-2,1);mob('greenslime',2,0.5);mob('emberelem',-6,4);mob('shellback',6,3);mob('lavahound',0,5);},
-  cam:u=>{const e=ease(u),d=lerp(11,9,e);return {x:AX,z:AZ-d,y:AY()+lerp(1.2,1.5,e),yaw:look(AX,AZ-d,AX,AZ),pitch:lerp(0.08,0.04,e),shake:u>0.62?(1-u)*0.06:0};},
-  act(u,f){if(f===Math.round(0.45*this.frames))W.cast2(SP.meteor,AX,AZ+4,null);}},
+  cam:u=>{const e=ease(u),d=lerp(15,12,e);return {x:AX,z:AZ-d,y:AY()+lerp(1.8,2.2,e),yaw:look(AX,AZ-d,AX,AZ),pitch:lerp(0.06,0.04,e),shake:u>0.62?(1-u)*0.06:0};},
+  act(u,f){if(u<0.45)pin();if(f===Math.round(0.45*this.frames))W.cast2(SP.meteor,AX,AZ+5,null);}},
  {dur:2.6,slam:'12 LANDS',flash:1,setup(){W.cleanup();},cam:orbit(W.VOLC.x,W.VOLC.z,330,2.7,3.2,gH(W.VOLC.x,W.VOLC.z)+70,-0.12)},
  {dur:4.4,title:'And a kingdom above the clouds.',flash:1,cam:u=>{const e=ease(u),x=K.x-60+e*20,z=K.z-120+e*30;return {x,z,y:lerp(K.y-40,K.y+40,e),yaw:look(x,z,K.cx,K.cz),pitch:lerp(0.35,-0.3,e)};}},
  {dur:0.9,black:1,cam:u=>({x:1,z:31,y:gH(1,31)+1.7,yaw:0,pitch:0})},
