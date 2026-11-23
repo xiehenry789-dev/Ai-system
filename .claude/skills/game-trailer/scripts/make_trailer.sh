@@ -5,7 +5,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)";ROOT="$(cd "$HERE/../../../.." && pwd)"
 OUT="${1:-$ROOT/wizard-meadow/trailer/WizardMeadow-trailer.mp4}";FPS="${2:-20}";W="${3:-960}";H="${4:-540}";JOBS="${TRAILER_JOBS:-2}"
 WORK="${TRAILER_WORK:-$(mktemp -d)}";mkdir -p "$WORK/frames" "$(dirname "$OUT")";echo "work folder: $WORK"
-NS=$(grep -c "^ {dur:" "$HERE/shots.js")
+NS=$(grep -cE "^ (\{dur:|spellCut\(|\{\.\.\.spellCut)" "$HERE/shots.js")
 pids=()
 for j in $(seq 0 $((JOBS-1))); do
   list=$(seq $j $JOBS $((NS-1)) | paste -sd, -)

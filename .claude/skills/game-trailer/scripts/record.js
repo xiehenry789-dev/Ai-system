@@ -6,6 +6,7 @@ let html=fs.readFileSync(GAME,'utf8');
 // recording hooks, added to an in-memory copy only
 html=html.replace('window.__wm={','window.__wm={gH:groundH,staffScene,VOLC:typeof VOLC!=="undefined"?VOLC:{x:1440,z:0},LIGHT:typeof LIGHT!=="undefined"?LIGHT:{x:-40,z:1410},KING:typeof KING!=="undefined"?KING:null,cleanup:()=>{for(const e of enemies)e.despawn=true;},');
 html=html.replace('if(time>4&&!paused()){','if(false){');
+html=html.replace('function updateBadge(e,show){','function updateBadge(e,show){if(window.__vt&&window.__vt.on){e.badge.visible=false;e.bar.bg.visible=e.bar.fill.visible=false;return;}'); // no badges or health bars in the trailer
 html=html.replace('const g=FAIRY.g,show=!homeOpen','const g=FAIRY.g,show=!window.__vt.on&&!homeOpen'); // no fairy in the trailer
 html=html.replace('function frame(now){\n  requestAnimationFrame(frame);','function frame(now){\n  requestAnimationFrame(frame);if(window.__vt.on){if(!window.__vt.go)return;now=window.__vt.t;window.__vt.go=false;setTimeout(window.__vt.res,0);}'); // the game only moves on when the recorder asks for the next frame
 html=html.replace('const raw=(now-last)/1000;last=now;let dt=(homeOpen||','const raw=(now-last)/1000;last=now;let dt=(raw<=0||homeOpen||'); // keep full quality while frames take long to render
@@ -42,17 +43,27 @@ let three=null;try{three=fs.readFileSync(require.resolve('three/build/three.min.
     for(let f=-8;f<frames;f++){ // 8 warm-up frames before each shot settle the scenery
 
       await pg.evaluate(([si,f,frames,dt,W,H])=>{const S=window.__SHOTS[si],w=window.__wm,p=w.player,u=Math.max(0,f)/Math.max(1,frames-1),c=S.cam.call(S,u);
-        p.x=c.x;p.z=c.z;p.feet=c.y;p.vx=p.vy=p.vz=0;p.yaw=c.yaw;p.pitch=c.pitch;p.hp=Math.max(p.hp,p.max*0.5);
+        const sk=c.shake||0;p.x=c.x;p.z=c.z;p.feet=c.y;p.vx=p.vy=p.vz=0;p.yaw=c.yaw+(sk?(Math.random()-0.5)*sk:0);p.pitch=c.pitch+(sk?(Math.random()-0.5)*sk:0);p.hp=Math.max(p.hp,p.max*0.5);
         if(S.act&&f>=0)S.act.call(S,u,f);
         const cv=document.getElementById('tov'),x=cv.getContext('2d'),fade=(a,b)=>Math.min(1,Math.max(0,(u-a)/b));x.clearRect(0,0,W,H);
         const blk=S.black?1:Math.max(0,1-Math.max(0,f)/4);if(blk>0){x.fillStyle='rgba(0,0,0,'+blk+')';x.fillRect(0,0,W,H);}
         x.fillStyle='#000';const bh=Math.round(H*0.11);x.fillRect(0,0,W,bh);x.fillRect(0,H-bh,W,bh);
+        if(S.flash&&f>=0&&f<3){x.fillStyle='rgba(255,250,235,'+(1-f/3)*0.9+')';x.fillRect(0,0,W,H);}
         x.textAlign='center';x.textBaseline='middle';const txt=S.title||S.sub;
+        if(S.slam&&f>=0){const k=Math.min(1,f/5),sc=1.5-0.5*(1-Math.pow(1-k,3)),al=Math.min(k*1.5,1)*(1-Math.max(0,(u-0.88)/0.12));x.save();x.translate(W/2,H*0.5);x.scale(sc,sc);
+          x.globalAlpha=al;x.font='900 '+Math.round(H*0.13)+'px Impact, "Arial Black", "Helvetica Neue", sans-serif';x.lineWidth=H*0.012;x.strokeStyle='rgba(0,0,0,0.75)';x.strokeText(S.slam,0,0);
+          x.shadowColor='rgba(255,170,40,0.8)';x.shadowBlur=H*0.05;x.fillStyle='#fff3d0';x.fillText(S.slam,0,0);x.restore();x.globalAlpha=1;x.shadowBlur=0;}
         const sh=(t,y,size,col,al,wt)=>{if(al<=0||!t)return;x.globalAlpha=al;x.font=(wt||'600')+' '+size+'px Cinzel, Georgia, "Times New Roman", serif';x.shadowColor='rgba(0,0,0,0.85)';x.shadowBlur=size*0.5;x.fillStyle=col;x.fillText(t,W/2,y);x.shadowBlur=0;x.globalAlpha=1;};
         sh(txt?txt.toUpperCase():'',H*0.8,Math.round(H*0.045),'#f6efdc',Math.min(fade(0.06,0.18),1-fade(0.82,0.16)));
         if(S.logo){sh('WIZARD MEADOW',H*0.42,Math.round(H*0.12),'#ffd98a',fade(0.12,0.3),'700');sh('P L A Y   N O W',H*0.58,Math.round(H*0.035),'#f6efdc',S.logo===2?fade(0.1,0.3):fade(0.6,0.25));}
+        window.__stamp=(window.__stamp||0)+1;x.globalAlpha=1;x.shadowBlur=0;for(let b=0;b<12;b++){x.fillStyle=(window.__stamp>>b)&1?'#fff':'#000';x.fillRect(8+b*10,H-12,8,8);} // frame number for the capture to check
         return new Promise(r=>{window.__vt.t+=dt*1000;window.__vt.res=r;window.__vt.go=true;});},[si,f,frames,1/FPS,W,H]);
-      if(f>=0){lastFrame=null;await nextFrame();if(!lastFrame)await nextFrame();
+      if(f>=0){const want=await pg.evaluate(()=>window.__stamp&4095);let got=null; // wait for the screencast frame that carries this frame's number
+        for(let tries=0;tries<40&&!got;tries++){lastFrame=null;await nextFrame();if(!lastFrame)continue;
+          const id=await pg.evaluate(async([d,H])=>{const im=new Image();im.src='data:image/jpeg;base64,'+d;await im.decode();const c=document.createElement('canvas');c.width=im.width;c.height=im.height;const x=c.getContext('2d');x.drawImage(im,0,0);
+            const k=im.height/H;let v=0;for(let b=0;b<12;b++){const px=x.getImageData(Math.round((12+b*10)*k),Math.round((H-8)*k),1,1).data;if(px[0]>128)v|=1<<b;}return v;},[lastFrame,H]);
+          if(id===want)got=lastFrame;else if(id>want&&id-want<2000)got=lastFrame;}
+        if(!got)console.log('warning: frame',si,f,'was not matched');lastFrame=got||lastFrame;
         if(lastFrame){fs.writeFileSync(path.join(OUT,'s'+String(si).padStart(2,'0')+'_'+String(k++).padStart(5,'0')+'.jpg'),Buffer.from(lastFrame,'base64'));n++;if(n%50===0)console.log('frame',n);}}}
     }
   fs.writeFileSync(path.join(OUT,process.env.TRAILER_ONLY?'cuts-'+process.env.TRAILER_ONLY.replace(/,/g,'-')+'.json':'cuts.json'),JSON.stringify({cuts,total:+t.toFixed(3),fps:FPS,shots}));console.log('recorded',n,'frames,',t.toFixed(1),'s');await b.close();})();
