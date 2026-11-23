@@ -739,14 +739,20 @@ const CAMPS=[
   {name:'Naga Grotto',kind:'grotto',x:500,z:1290,r:10,crew:['naga','naga','naga','seabrute']},
   {name:'Mycelium Heart',kind:'myco',x:-1450,z:-250,r:12,crew:['sporebeast*','shroomling','shroomling','cavespider','cavespider'],landmark:1},
   {name:'Shroomling Warren',kind:'warren',x:-1320,z:420,r:10,crew:['shroomling','shroomling','shroomling','shroomling','sporebeast']},
-  {name:'Webbed Hollow',kind:'webs',x:-1560,z:160,r:10,crew:['cavespider','cavespider','cavespider','cavespider','cavespider']}
+  {name:'Webbed Hollow',kind:'webs',x:-1560,z:160,r:10,crew:['cavespider','cavespider','cavespider','cavespider','cavespider']},
+  {name:'Slime Pond',kind:'pond',x:-95,z:-215,r:9,crew:['greenslime*','greenslime','greenslime','duskbat']},
+  {name:'Heart of the Old Wood',kind:'oakgrove',x:-120,z:-70,r:9,crew:['oakheart','duskbat','duskbat','duskbat']},
+  {name:'Wyrm Dunes',kind:'dunes',x:230,z:360,r:10,crew:['sandwyrm','sandwyrm','scorpion','scorpion']},
+  {name:'Beetle Burrows',kind:'burrows',x:700,z:500,r:10,crew:['shellback*','shellback','shellback','shellback']},
+  {name:'Bat Belfry',kind:'belfry',x:-700,z:-430,r:10,crew:['gravebat','gravebat','gravebat','gravebat','skeleton']}
 ];
 /* every named camp guards a chest; clearing the camp opens it to you */
 const CAMP_RUNE={'Goblin Camp':'wind','Spider Nest':'poison','Ogre Den':'earth','Wisp Shrine':'arcane','Raider Camp':'fire','Golem Quarry':'earth',
   'Frost Keep':'frost','Wolf Den':'frost','Sunken Temple':'light','Scorpion Nest':'poison','Ember Forge':'fire','Fire Pit':'fire',"Witch's Mire":'shadow','Rotting Hollow':'nature',
   'Prism Spire':'storm','Geode Hollow':'arcane','Bandit Fort':'wind','Basilisk Nest':'earth','Overgrown Temple':'nature','Spider Grove':'poison','Haunted Crypt':'shadow','Bone Field':'light',
   'Stormcrown Aerie':'wind','Griffon Roost':'wind','Windward Ruins':'storm','Obsidian Citadel':'fire','Hound Pits':'fire','Cinder Shrine':'earth',
-  'Sunken Wreck':'frost','Crab Shoals':'frost','Naga Grotto':'poison','Mycelium Heart':'poison','Shroomling Warren':'nature','Webbed Hollow':'shadow'};
+  'Sunken Wreck':'frost','Crab Shoals':'frost','Naga Grotto':'poison','Mycelium Heart':'poison','Shroomling Warren':'nature','Webbed Hollow':'shadow',
+  'Slime Pond':'poison','Heart of the Old Wood':'nature','Wyrm Dunes':'light','Beetle Burrows':'earth','Bat Belfry':'shadow'};
 const LAVA_POOLS=[];
 (function(){let g=0;while(LAVA_POOLS.length<9&&g++<500){const a=rr(-0.75,0.75),R=rr(360,575),x=Math.cos(a)*R,z=Math.sin(a)*R,r=rr(5,10);
   if(CAMPS.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+r+14)||LAVA_POOLS.some(p=>Math.hypot(p.x-x,p.z-z)<p.r+r+20))continue;LAVA_POOLS.push({x,z,r});}})();
@@ -1976,7 +1982,7 @@ function ringTower(x,z,y0,R,n,courses,bh,colf){
     addPiece(x+Math.cos(am)*R,y0+bh*(k+0.5),z+Math.sin(am)*R,Math.PI*R/n*0.97,bh/2,0.3,qYaw(Math.atan2(-Math.cos(am),-Math.sin(am))),colf());}
 }
 /* ── the outer ring: camps of the Skyreach, the Caldera, the Coral Coast and the Fungal Deep ── */
-const OUTER_KINDS=['aerie','roost','ruins','citadel','pits','cshrine','wreck','shoals','grotto','myco','warren','webs'];
+const OUTER_KINDS=['aerie','roost','ruins','citadel','pits','cshrine','wreck','shoals','grotto','myco','warren','webs','pond','oakgrove','dunes','burrows','belfry'];
 const _qa=new T.Vector3(),_qb=new T.Vector3();
 function qAlong(dx,dy,dz){_qa.set(dx,dy,dz);if(Math.abs(dx)+Math.abs(dz)<1e-4)_qb.set(0,0,1);else _qb.set(-dz,0,dx);return qBasis(_qa,_qb);}
 const OC={
@@ -2084,6 +2090,27 @@ function buildOuterCamp(cp){
   }else if(cp.kind==='warren'){
     for(let i=0;i<6;i++){const a=gapA+Math.PI+(i-2.5)*0.8,d=cp.r*0.7;mush(X+Math.cos(a)*d,Z+Math.sin(a)*d,3+(i%2),rr(1.6,2.3),i%3?OC.cap:OC.cap2);}
     campfire(X,Z,y0);litter(OC.stem,6,1.2);
+  }else if(cp.kind==='pond'){
+    paintBlob(X,Z,cp.r*0.62,'52,104,128',0.92,5);rocks(mossy,16,cp.r*0.7);
+    for(let i=0;i<7;i++){const a=rnd()*6.28,d=rr(0.5,cp.r*0.5);addPiece(X+Math.cos(a)*d,y0+0.03,Z+Math.sin(a)*d,rr(0.35,0.55),0.02,rr(0.35,0.55),qYaw(rnd()*6),[0.2,0.5,0.16],S_RUBBLE);}
+    for(let i=0;i<14;i++){const a=rnd()*6.28,d=cp.r*rr(0.62,0.85),h=rr(0.5,0.9);addPiece(X+Math.cos(a)*d,y0+h,Z+Math.sin(a)*d,0.03,h,0.03,qYaw(rnd()*6),[0.3,0.48,0.16]);}
+  }else if(cp.kind==='oakgrove'){
+    for(let i=0;i<6;i++){const a=i/6*6.283+0.3,x=X+Math.cos(a)*(cp.r-0.5),z=Z+Math.sin(a)*(cp.r-0.5);column(x,z,2+(i%3),0.42,mossy);}
+    for(let i=0;i<3;i++){const a=gapA+Math.PI+(i-1)*0.9,d=cp.r*0.45,x=X+Math.cos(a)*d,z=Z+Math.sin(a)*d;beam(x-Math.sin(a)*1.6,y0+0.28,z+Math.cos(a)*1.6,x+Math.sin(a)*1.6,y0+0.28,z-Math.cos(a)*1.6,0.26,OC.plank);}
+    litter(mossy,10,1.4);pendingFx.push({x:X,y:y0+0.8,z:Z,r:1.2,until:Infinity,rate:5,acc:0,type:3,sy:1,persist:true});
+  }else if(cp.kind==='dunes'){
+    const sand=()=>{const t=rr(0.85,1.08);return [0.78*t,0.64*t,0.42*t];};rocks(sand,12);
+    for(let i=0;i<6;i++){const u=(i-2.5)*0.9,x=X+Math.cos(gapA+1.2)*u,z=Z+Math.sin(gapA+1.2)*u,px=-Math.sin(gapA+1.2),pz=Math.cos(gapA+1.2);beam(x-px*1.6,y0,z-pz*1.6,x,y0+2.2-Math.abs(u)*0.25,z,0.12,OC.white);beam(x+px*1.6,y0,z+pz*1.6,x,y0+2.2-Math.abs(u)*0.25,z,0.12,OC.white);}
+    litter(OC.white,10,1.2);
+  }else if(cp.kind==='burrows'){
+    const red=()=>{const t=rr(0.85,1.05);return [0.66*t,0.34*t,0.22*t];};rocks(red,14);
+    for(let i=0;i<4;i++){const a=i/4*6.283+0.5,d=cp.r*0.45;paintBlob(X+Math.cos(a)*d,Z+Math.sin(a)*d,1.6,'26,16,12',0.95,3);for(let k=0;k<5;k++){const b=a+k*1.26;addPiece(X+Math.cos(a)*d+Math.cos(b)*1.9,y0+0.25,Z+Math.sin(a)*d+Math.sin(b)*1.9,0.4,0.25,0.35,qYaw(rnd()*6),red());}}
+    litter(red,8,1.4);
+  }else if(cp.kind==='belfry'){
+    const [tx,tz]=away(3);const gs=()=>{const t=rr(0.8,1.05);return [0.36*t,0.36*t,0.4*t];};ringTower(tx,tz,y0,2.0,9,12,0.7,gs);
+    addPiece(tx,y0+12*0.7+0.6,tz,0.55,0.55,0.55,qYaw(0.4),[0.7,0.55,0.18]);litter(OC.white,12,1);
+    for(let i=0;i<5;i++){const a=gapA+Math.PI+(i-2)*0.7,d=cp.r*0.75;addPiece(X+Math.cos(a)*d,y0+0.42,Z+Math.sin(a)*d,0.3,0.42,0.07,qYaw(-a),gs());}
+    pendingFx.push({x:tx,y:y0+9,z:tz,r:1.5,until:Infinity,rate:4,acc:0,type:3,sy:1,persist:true});
   }else{ // webs: dark rocks with silk strung between them, and egg sacs
     rocks(OC.dark,14);const P=[];for(let i=0;i<7;i++){const a=i/7*6.283+0.3,R=cp.r*0.95;P.push([X+Math.cos(a)*R,Z+Math.sin(a)*R]);}
     for(let i=0;i<7;i++){const a=P[i],b=P[(i+3)%7];beam(a[0],y0+1.6,a[1],b[0],y0+0.6,b[1],0.025,OC.silk,S_RUBBLE);}
@@ -4247,12 +4274,32 @@ const ETYPES={
   sporebeast:{name:'Spore Beast',base:'brute',hp:700,speed:3.2,dmg:40,reach:2.4,r:0.85,h:2.5,windup:0.6,cool:1.5,mass:3.5,bar:1.5,aggro:20,hit:'poison',recolor:[0x8a6aa8,0x3a2a4a,0xe8d8ff],acc:'cap',capCol:0x5a2ab0},
   skyguard:{name:'Sky Guardian',base:'golem',hp:900,speed:2.6,dmg:44,reach:2.7,r:0.95,h:2.8,windup:0.8,cool:1.8,mass:4,bar:1.6,aggro:18,hit:'chill',recolor:[0xe8e8f0,0x9ac8ff],acc:'wings',wingCol:0xd8e0f0},
   seabrute:{name:'Tide Brute',base:'brute',hp:1000,speed:3.3,dmg:48,reach:2.4,r:0.85,h:2.5,windup:0.6,cool:1.5,mass:3.5,bar:1.5,aggro:20,recolor:[0x3a8a8a,0x1a3a3a,0xffa080],acc:'spikes',spikeCol:0xff7a6a},
-  obsidiangolem:{name:'Obsidian Golem',base:'golem',hp:1200,speed:2.5,dmg:52,reach:2.7,r:1.0,h:3.0,windup:0.85,cool:1.8,mass:5,bar:1.7,aggro:18,hit:'burn',scale:1.1,recolor:[0x1a1418,0xff6a1a],acc:'spikes',spikeCol:0xff5a10}
+  obsidiangolem:{name:'Obsidian Golem',base:'golem',hp:1200,speed:2.5,dmg:52,reach:2.7,r:1.0,h:3.0,windup:0.85,cool:1.8,mass:5,bar:1.7,aggro:18,hit:'burn',scale:1.1,recolor:[0x1a1418,0xff6a1a],acc:'spikes',spikeCol:0xff5a10},
+  greenslime:{name:'Meadow Slime',base:'slime',hp:55,speed:1.3,dmg:8,reach:1.3,r:0.6,h:1.0,windup:0.3,cool:0.5,mass:1.2,bar:1.0,aggro:15,split:1,recolor:[0x5ad04a,0x2a6a22]},
+  frostslime:{name:'Frost Slime',base:'slime',hp:130,speed:1.4,dmg:13,reach:1.3,r:0.65,h:1.1,windup:0.3,cool:0.5,mass:1.4,bar:1.1,aggro:16,split:1,hit:'chill',scale:1.15,recolor:[0x8ad8ff,0x2a6a9a]},
+  magmaslime:{name:'Magma Slime',base:'slime',hp:160,speed:1.4,dmg:16,reach:1.3,r:0.65,h:1.1,windup:0.3,cool:0.5,mass:1.4,bar:1.1,aggro:16,split:1,hit:'burn',scale:1.15,glow:0xff5a10,recolor:[0xff7a2a,0x5a1a08]},
+  sporeslime:{name:'Spore Slime',base:'slime',hp:380,speed:1.5,dmg:24,reach:1.5,r:0.75,h:1.3,windup:0.3,cool:0.5,mass:2,bar:1.3,aggro:17,split:1,hit:'poison',scale:1.3,glow:0x6a2ab0,recolor:[0xb07aff,0x4a2a7a]},
+  duskbat:{name:'Dusk Bat',base:'bat',hp:32,speed:6,dmg:6,reach:1,r:0.4,h:0.6,fly:2.8,windup:0.3,cool:1.8,mass:0.4,bar:0.8,aggro:22},
+  gravebat:{name:'Grave Bat',base:'bat',hp:120,speed:7,dmg:15,reach:1,r:0.5,h:0.7,fly:3,windup:0.3,cool:1.6,mass:0.6,bar:0.9,aggro:24,hit:'chill',scale:1.35,recolor:[0x5a5a6a,0x8a7aa0]},
+  emberbat:{name:'Ember Bat',base:'bat',hp:230,speed:7.5,dmg:23,reach:1,r:0.55,h:0.8,fly:3.2,windup:0.3,cool:1.5,mass:0.8,bar:1.0,aggro:26,hit:'burn',scale:1.5,recolor:[0x2a1a1a,0xff5a1a]},
+  oakheart:{name:'Oakheart',base:'treant',hp:420,speed:1.9,dmg:22,reach:2.7,r:1.0,h:4.2,windup:0.9,cool:2.1,mass:7,bar:1.9,aggro:16},
+  frostbark:{name:'Frostbark',base:'treant',hp:560,speed:1.9,dmg:28,reach:2.7,r:1.0,h:4.2,windup:0.9,cool:2.1,mass:7,bar:1.9,aggro:16,hit:'chill',recolor:[0x6a6670,0xd8f0ff]},
+  thornback:{name:'Thornback',base:'treant',hp:820,speed:2.0,dmg:36,reach:2.8,r:1.1,h:4.6,windup:0.85,cool:2.0,mass:8,bar:2.0,aggro:17,hit:'poison',scale:1.15,recolor:[0x3a2614,0x2a6a1a]},
+  sandwyrm:{name:'Sand Wyrm',base:'worm',hp:240,speed:6.5,dmg:20,reach:2.4,r:0.75,h:4,windup:0.3,cool:1.4,mass:5,bar:1.5,aggro:22,recolor:[0xc8a060,0xf0d8a0]},
+  burroweel:{name:'Burrow Eel',base:'worm',hp:700,speed:7,dmg:38,reach:2.4,r:0.75,h:4,windup:0.3,cool:1.3,mass:5,bar:1.5,aggro:22,hit:'chill',recolor:[0x2a7a7a,0x9ae0d0]},
+  ashwyrm:{name:'Ash Wyrm',base:'worm',hp:1000,speed:7.2,dmg:48,reach:2.6,r:0.85,h:4.4,windup:0.3,cool:1.3,mass:6,bar:1.7,aggro:22,hit:'burn',scale:1.15,recolor:[0x2a2224,0xff6a1a]},
+  mirebeetle:{name:'Mire Beetle',base:'beetle',hp:220,speed:3.4,dmg:17,reach:1.9,r:0.85,h:1.2,windup:0.5,cool:1.4,mass:3,bar:1.3,aggro:17,hit:'poison',recolor:[0x3a5a2a,0x1a1a14]},
+  shellback:{name:'Shellback Beetle',base:'beetle',hp:340,speed:3.5,dmg:24,reach:2.0,r:0.95,h:1.3,windup:0.5,cool:1.4,mass:3.5,bar:1.4,aggro:17,scale:1.15,recolor:[0xa8542a,0x2a1a10]},
+  crystalbeetle:{name:'Crystal Beetle',base:'beetle',hp:480,speed:3.6,dmg:30,reach:2.0,r:1.0,h:1.4,windup:0.5,cool:1.4,mass:4,bar:1.5,aggro:18,hit:'chill',scale:1.2,recolor:[0x9a7ad8,0x2a1a4a]},
+  emberelem:{name:'Ember Elemental',base:'elemental',hp:190,speed:3.4,dmg:18,reach:0,r:0.6,h:1.2,fly:2.2,windup:0.6,cool:2.0,mass:2,bar:1.2,aggro:24,ranged:1,orb:0xff6a1a,hit:'burn',recolor:[0x3a2a2a]},
+  iceelem:{name:'Frost Elemental',base:'elemental',hp:180,speed:3.4,dmg:17,reach:0,r:0.6,h:1.2,fly:2.2,windup:0.6,cool:2.0,mass:2,bar:1.2,aggro:24,ranged:1,orb:0x8fe3ff,hit:'chill',recolor:[0x8aa0b0]},
+  stormelem:{name:'Storm Elemental',base:'elemental',hp:640,speed:3.8,dmg:34,reach:0,r:0.7,h:1.4,fly:2.6,windup:0.55,cool:1.8,mass:3,bar:1.4,aggro:27,ranged:1,orb:0xffe45c,scale:1.3,recolor:[0x4a4a62]}
 };
 /* ── monster levels: see at a glance who you can take on ── */
 const ELV={spider:1,imp:2,archer:2,wisp:3,brute:4,golem:5,frostwolf:5,scorpion:5,fireimp:6,swampwisp:6,mummy:7,bog:7,icegolem:8,magmagolem:8,
   junglespider:9,shardwisp:9,stalker:10,raider:10,skeleton:10,ghost:11,basilisk:11,vinehorror:12,crystalgolem:13,boss:8,
-  crab:12,shroomling:12,stormwisp:13,cavespider:13,griffin:14,cinderimp:14,naga:15,lavahound:15,sporebeast:16,skyguard:16,seabrute:17,obsidiangolem:18};
+  crab:12,shroomling:12,stormwisp:13,cavespider:13,griffin:14,cinderimp:14,naga:15,lavahound:15,sporebeast:16,skyguard:16,seabrute:17,obsidiangolem:18,
+  greenslime:1,duskbat:2,oakheart:5,frostslime:5,magmaslime:6,sandwyrm:7,mirebeetle:7,frostbark:7,iceelem:8,emberelem:8,gravebat:10,shellback:10,crystalbeetle:12,thornback:12,sporeslime:13,emberbat:14,burroweel:15,stormelem:15,ashwyrm:17};
 const LV_COL=['#9aa0a6','#7ddc6a','#f4f0dc','#ffa53a','#ff4a3a'],LV_WORD=['trivial','easy','an even match','hard','far too strong'];
 const lvClass=d=>d>=3?4:d>=1?3:d===0?2:d>=-2?1:0;
 // what a level gap does: 3 or more above you and your magic barely scratches it while it hits much harder
@@ -4273,7 +4320,7 @@ function badgeTex(lv,cls){
 }
 function mkBadge(e){const s=new T.Sprite(new T.SpriteMaterial({map:badgeTex(e.lv,2),depthTest:false,transparent:true,toneMapped:false}));s.renderOrder=32;s.visible=false;scene.add(s);e.badgeCls=-1;return s;}
 function updateBadge(e,show){
-  const T0=e.T,d=Math.hypot(e.x-player.x,e.z-player.z),vis=!T0.boss&&e.state!=='dead'&&e.state!=='rise'&&d<42;e.badge.visible=vis;if(!vis)return;
+  const T0=e.T,d=Math.hypot(e.x-player.x,e.z-player.z),vis=!T0.boss&&!e.under&&e.state!=='dead'&&e.state!=='rise'&&d<42;e.badge.visible=vis;if(!vis)return;
   const cls=lvClass((e.lv||1)-SKILL.level);if(cls!==e.badgeCls){e.badgeCls=cls;e.badge.material.map=badgeTex(e.lv,cls);e.badge.material.needsUpdate=true;}
   const dc=Math.hypot(e.x-camera.position.x,e.y-camera.position.y,e.z-camera.position.z),h=Math.max(0.3,dc*0.03),top=e.y+(T0.fly?0.95:T0.h*(e.m.scale||1)+0.35)+(show?0.26:0.05)+h*0.5;
   e.badge.position.set(e.x,top,e.z);e.badge.scale.set(h*2.6,h,1);
@@ -4336,11 +4383,121 @@ function buildWisp(){
   return {g,mats:[shell],limbs:{},head:body,rings,halo};
 }
 const barBgMat=new T.SpriteMaterial({color:0x101418,depthTest:false,transparent:true,opacity:0.75});
+/* ── new monster families: slimes, bats, treants, wyrms, beetles and elementals ── */
+const cC=c=>new T.Color(c).convertSRGBToLinear();
+const NEWB={
+  slime(T0){const g=new T.Group(),gel=new T.MeshStandardMaterial({color:cC(0x5ad04a),roughness:0.2,transparent:true,opacity:0.8,emissive:T0.glow?cC(T0.glow).multiplyScalar(0.5):new T.Color(0)}),core=stdMat(0x2a6a22),eye=stdMat(0x0c0c10,{roughness:0.25}),hi=glowMat(0xffffff);
+    const body=new T.Group();g.add(body);const b=new T.Mesh(new T.SphereGeometry(0.55,18,12),gel);b.scale.set(1,0.82,1);b.position.y=0.45;body.add(b);
+    const c=new T.Mesh(new T.IcosahedronGeometry(0.2,0),core);c.position.y=0.42;body.add(c);
+    const head=new T.Group();head.position.set(0,0.58,0.4);body.add(head);
+    for(const sx of[-1,1]){const e2=new T.Mesh(new T.SphereGeometry(0.075,10,8),eye);e2.position.set(sx*0.17,0,0);head.add(e2);const h=new T.Mesh(new T.SphereGeometry(0.022,6,5),hi);h.position.set(sx*0.17+0.025,0.03,0.06);head.add(h);}
+    return {g,mats:[gel,core],limbs:{},head,body};},
+  bat(T0){const g=new T.Group(),fur=stdMat(0x2a2230),wingM=stdMat(0x4a3a50,{side:T.DoubleSide}),eye=glowMat(0xff3a3a);
+    const body=new T.Group();g.add(body);const b=new T.Mesh(new T.SphereGeometry(0.2,12,9),fur);b.scale.set(1,1.05,1.3);body.add(b);
+    const head=new T.Group();head.position.set(0,0.1,0.25);body.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.13,10,8),fur));
+    for(const sx of[-1,1]){const ear=new T.Mesh(new T.ConeGeometry(0.05,0.16,5),fur);ear.position.set(sx*0.07,0.14,-0.02);ear.rotation.z=-sx*0.25;head.add(ear);
+      const e2=new T.Mesh(new T.SphereGeometry(0.025,6,5),eye);e2.position.set(sx*0.05,0.02,0.11);head.add(e2);}
+    const sh=new T.Shape();sh.moveTo(0,0.08);sh.lineTo(0.35,0.2);sh.lineTo(0.75,0.12);sh.quadraticCurveTo(0.62,0.0,0.6,-0.12);sh.quadraticCurveTo(0.45,-0.05,0.38,-0.2);sh.quadraticCurveTo(0.22,-0.08,0.14,-0.22);sh.quadraticCurveTo(0.08,-0.06,0,-0.08);
+    const wg=new T.ShapeGeometry(sh),W=[];for(const sx of[-1,1]){const p=new T.Group();p.position.set(sx*0.14,0.04,0);const w=new T.Mesh(wg,wingM);w.scale.set(sx,1,1);w.rotation.x=-Math.PI/2;p.add(w);body.add(p);W.push(p);}
+    return {g,mats:[fur,wingM],limbs:{},head,body,batw:W};},
+  treant(T0){const g=new T.Group(),bark=stdMat(0x5a3e26,{roughness:0.95}),leaf=stdMat(0x3f7a2e,{flatShading:true}),eye=glowMat(0xc8ff6a);
+    const trunk=new T.Mesh(new T.CylinderGeometry(0.5,0.68,2.3,9),bark);trunk.position.y=2.0;g.add(trunk);
+    for(const [x,y,z,r] of[[0.3,1.6,0.5,0.12],[-0.35,2.4,0.48,0.1],[0.1,2.9,-0.45,0.11]]){const k=new T.Mesh(new T.SphereGeometry(r,6,5),bark);k.position.set(x,y,z);g.add(k);}
+    for(const sx of[-1,1]){const e2=new T.Mesh(new T.BoxGeometry(0.16,0.06,0.04),eye);e2.position.set(sx*0.2,2.55,0.55);e2.rotation.z=sx*0.25;g.add(e2);}
+    const head=new T.Group();head.position.set(0,3.15,0);g.add(head);
+    for(const [x,y,z,r] of[[0,0.35,0,1.05],[0.7,0.05,0.2,0.7],[-0.7,0.1,-0.1,0.75],[0.1,0.1,-0.7,0.7],[0,0.95,0.1,0.65]]){const c=new T.Mesh(new T.IcosahedronGeometry(r,1),leaf);c.position.set(x,y,z);head.add(c);}
+    const limbs={};
+    for(const sx of[-1,1]){const leg=new T.Group();leg.position.set(sx*0.42,1.0,0);g.add(leg);const l=new T.Mesh(new T.CylinderGeometry(0.22,0.34,1.05,7),bark);l.position.y=-0.5;leg.add(l);
+      const foot=new T.Mesh(new T.CylinderGeometry(0.1,0.18,0.6,5),bark);foot.rotation.x=1.3;foot.position.set(0,-0.95,0.3);leg.add(foot);limbs[sx<0?'legL':'legR']=leg;
+      const arm=new T.Group();arm.position.set(sx*0.62,2.75,0);g.add(arm);const a=new T.Mesh(new T.CylinderGeometry(0.1,0.17,1.6,6),bark);a.position.y=-0.75;a.rotation.z=sx*0.18;arm.add(a);
+      for(let k=0;k<3;k++){const t=new T.Mesh(new T.CylinderGeometry(0.03,0.06,0.5,4),bark);t.position.set(sx*(0.2+k*0.05),-1.45,(k-1)*0.12);t.rotation.set((k-1)*0.4,0,sx*0.6);arm.add(t);}
+      const lc=new T.Mesh(new T.IcosahedronGeometry(0.38,0),leaf);lc.position.set(sx*0.12,-0.2,0);arm.add(lc);limbs[sx<0?'armL':'armR']=arm;}
+    return {g,mats:[bark,leaf],limbs,head};},
+  worm(T0){const g=new T.Group(),skin=stdMat(0xc8a060,{roughness:0.8}),belly=stdMat(0xf0d8a0),tooth=stdMat(0xf6f0e0,{roughness:0.4});
+    const segs=[];let p=g;for(let i=0;i<7;i++){const s=new T.Group();s.position.y=i?0.56:0.3;p.add(s);const r=0.56-i*0.025;const m=new T.Mesh(new T.SphereGeometry(r,14,10),skin);m.scale.set(1,0.85,1);s.add(m);
+      const band=new T.Mesh(new T.TorusGeometry(r*0.92,0.06,6,16),belly);band.rotation.x=Math.PI/2;band.position.y=-0.22;s.add(band);segs.push(s);p=s;}
+    const head=new T.Group();head.position.y=0.5;p.add(head);const hm=new T.Mesh(new T.SphereGeometry(0.5,14,10),skin);hm.scale.set(1,0.8,1.15);head.add(hm);
+    const mouth=new T.Mesh(new T.CircleGeometry(0.3,14),stdMat(0x3a1010));mouth.position.set(0,0.05,0.56);head.add(mouth);
+    for(let k=0;k<4;k++){const a=k/4*6.283+0.785,t=new T.Mesh(new T.ConeGeometry(0.07,0.42,5),tooth);t.position.set(Math.cos(a)*0.28,0.05+Math.sin(a)*0.24,0.62);t.rotation.set(Math.PI/2+Math.sin(a)*0.5,0,-Math.cos(a)*0.5);head.add(t);}
+    return {g,mats:[skin,belly],limbs:{},head,segs};},
+  beetle(T0){const g=new T.Group(),shell=stdMat(0x3a5a2a,{roughness:0.3,metalness:0.35}),dark=stdMat(0x1a1a14),eye=glowMat(0xffd24a);
+    const roll=new T.Group();roll.position.y=0.62;g.add(roll);
+    const s=new T.Mesh(new T.SphereGeometry(0.72,18,12,0,6.283,0,Math.PI/2),shell);s.scale.set(1,0.8,1.25);roll.add(s);
+    const u=new T.Mesh(new T.SphereGeometry(0.66,14,8,0,6.283,Math.PI/2,Math.PI/2),dark);u.scale.set(1,0.45,1.2);roll.add(u);
+    const seam=new T.Mesh(new T.BoxGeometry(0.04,0.06,1.75),dark);seam.position.y=0.56;roll.add(seam);
+    const head=new T.Group();head.position.set(0,0.55,0.88);g.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.28,12,9),dark));
+    const horn=new T.Mesh(new T.ConeGeometry(0.08,0.55,6),shell);horn.position.set(0,0.2,0.2);horn.rotation.x=0.7;head.add(horn);
+    for(const sx of[-1,1]){const e2=new T.Mesh(new T.SphereGeometry(0.04,6,5),eye);e2.position.set(sx*0.15,0.08,0.22);head.add(e2);}
+    const legs=[];for(let i=0;i<6;i++){const sx=i<3?-1:1,k=i%3,l=new T.Group();l.position.set(sx*0.55,0.45,0.45-k*0.45);g.add(l);
+      const a=new T.Mesh(new T.CylinderGeometry(0.04,0.03,0.7,5),dark);a.rotation.z=sx*1.0;a.position.set(sx*0.25,-0.18,0);l.add(a);legs.push(l);}
+    return {g,mats:[shell,dark],limbs:{},head,roll,legs};},
+  elemental(T0){const g=new T.Group(),col=T0.orb||0xff6a1a,rock=stdMat(0x5a5a62,{flatShading:true,roughness:0.9}),coreM=stdMat(col,{emissive:cC(col),emissiveIntensity:1.4,roughness:0.3});
+    const core=new T.Mesh(new T.IcosahedronGeometry(0.34,1),coreM);g.add(core);
+    const aura=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:cC(col),blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,opacity:0.7}));aura.scale.set(2.2,2.2,1);g.add(aura);
+    const ring=new T.Group();g.add(ring);for(let i=0;i<7;i++){const a=i/7*6.283,s=new T.Mesh(new T.OctahedronGeometry(0.2,0),i%2?coreM:rock);s.scale.set(0.9,1.7,0.9);s.position.set(Math.cos(a)*0.85,Math.sin(i*1.7)*0.25,Math.sin(a)*0.85);s.rotation.z=a;ring.add(s);}
+    return {g,mats:[rock,coreM],limbs:{},head:core,ring,aura};}
+};
+const ANIMX={
+  slime(e,dt,mv){const b=e.m.body,t=e.t;let sy=1+Math.sin(time*4+e.id)*0.05,sx=1;
+    if(e.state==='crouch'){const k=Math.min(1,t/0.3);sy=1-0.35*k;sx=1+0.22*k;}else if(e.state==='leap'){sy=1.22;sx=0.86;}else if(e.state==='recover'){const w=Math.sin(t*26)*0.16*Math.exp(-t*6);sy=1-w;sx=1+w*0.6;}
+    b.scale.set(sx,sy,sx);e.m.head.position.y=0.58*sy;},
+  bat(e,dt,mv){const dive=e.state==='dive',f=dive?1.15:0.25+Math.sin(time*24+e.id)*0.9;e.m.batw[0].rotation.z=f;e.m.batw[1].rotation.z=-f;e.m.body.rotation.x=dive?0.55:e.state==='climb'?-0.35:0;},
+  worm(e,dt,mv){const s=e.m.segs;for(let i=0;i<s.length;i++){s[i].rotation.x=Math.sin(time*2.4+i*0.7+e.id)*0.09*(e.state==='erupt'?0.3:1);s[i].rotation.z=Math.cos(time*1.9+i*0.6)*0.07;}
+    if(!e.aggro){e.under=true;e.sink=Math.min(4.6,(e.sink||4.6)+dt*4);}
+    const sp=Math.hypot(e.vx,e.vz);if(e.under&&sp>0.6&&Math.random()<0.7){const gy=groundH(e.x,e.z);PB.spawn(e.x+fr(-0.5,0.5),gy+0.1,e.z+fr(-0.5,0.5),fr(-0.6,0.6),fr(0.6,1.6),fr(-0.6,0.6),fr(0.6,1.1),0.35,1.1,0.55,0.45,0.32,0.55,0.62,0.54,0.42,2,1);}},
+  beetle(e,dt,mv){const rolling=e.state==='charge'||e.state==='roar',m=e.m;for(let i=0;i<6;i++){m.legs[i].visible=!rolling;m.legs[i].rotation.x=Math.sin(e.phase*2.2+i*1.1)*0.5*mv;}m.head.visible=!rolling;
+    if(rolling){m.roll.rotation.x+=dt*(e.state==='charge'?14:4);m.roll.scale.set(1,1.15,0.85);}else{m.roll.rotation.x*=Math.exp(-dt*10);m.roll.scale.set(1,1,1);}},
+  elemental(e,dt,mv){const m=e.m,nv=e.state==='nova'?Math.min(1,e.t/0.75):0;m.ring.rotation.y+=dt*(1.8+nv*6);m.ring.rotation.x=Math.sin(time*0.9+e.id)*0.4;m.ring.scale.setScalar(1-nv*0.45);
+    m.head.scale.setScalar(1+Math.sin(time*5+e.id)*0.08+nv*0.5);m.aura.material.opacity=0.55+nv*0.45;}
+};
+const AIX={
+  bat(e,dt,dx,dz,dist,gy,T0){
+    if(e.state==='dive'){e.flyY=Math.max(0.6,player.feet+1.1-gy);e.flyK=24;const d3=Math.hypot(dx,dz,player.feet+1.1-e.y);
+      if(!e.hitDone&&d3<1.25){e.hitDone=true;hurtPlayer(T0.dmg*(e.dmgMul||1),e.x,e.z,4,e);applyStatus(T0.hit);}
+      if(e.hitDone||e.t>1.3){e.state='climb';e.t=0;e.cd=T0.cool+Math.random();}return [dx/dist*T0.speed*1.9,dz/dist*T0.speed*1.9];}
+    if(e.state==='climb'){e.flyY=T0.fly;e.flyK=8;if(e.t>0.7){e.state='chase';e.t=0;}return [-dx/dist*T0.speed*0.7,-dz/dist*T0.speed*0.7];}
+    e.state='chase';e.orbA=(e.orbA==null?Math.atan2(-dz,-dx):e.orbA)+dt*1.3;const tx=player.x+Math.cos(e.orbA)*5.5,tz=player.z+Math.sin(e.orbA)*5.5,ax=tx-e.x,az=tz-e.z,ad=Math.hypot(ax,az)+1e-6;e.flyY=T0.fly;e.flyK=5;
+    if(e.cd<=0&&dist<11){e.state='dive';e.t=0;e.hitDone=false;SFX.swipe(e.x,e.z);}
+    const k=T0.speed*Math.min(1,ad/2);return [ax/ad*k,az/ad*k];},
+  worm(e,dt,dx,dz,dist,gy,T0){
+    if(e.sink==null)e.sink=4.6;
+    if(e.state==='erupt'){e.under=e.t<0.12;e.sink=Math.max(0,4.6*(1-e.t/0.32));
+      if(e.t<0.35&&Math.random()<0.9)for(let q=0;q<3;q++)PB.spawn(e.x+fr(-1,1),gy+0.2,e.z+fr(-1,1),fr(-3,3),fr(3,7),fr(-3,3),fr(0.8,1.4),0.4,1.4,0.55,0.45,0.32,0.7,0.62,0.54,0.42,9,0.6,1);
+      if(!e.hitDone&&e.t>0.22){e.hitDone=true;shake(0.4,e.x,e.z);if(dist<T0.reach+0.5&&player.feet-gy<2.2){hurtPlayer(T0.dmg*1.3*(e.dmgMul||1),e.x,e.z,11,e);applyStatus(T0.hit);}}
+      if(e.t>0.4){e.state='exposed';e.t=0;e.cd=0.6;}return [0,0];}
+    if(e.state==='exposed'){e.under=false;e.sink=0;if(e.cd<=0&&dist<T0.reach+0.4){e.cd=T0.cool;SFX.swipe(e.x,e.z);hurtPlayer(T0.dmg*(e.dmgMul||1),e.x,e.z,6,e);applyStatus(T0.hit);}
+      if(e.t>2.4){e.state='dive';e.t=0;}return [0,0];}
+    if(e.state==='dive'){e.sink=Math.min(4.6,e.t/0.5*4.6);if(e.t>0.5){e.state='under';e.t=0;e.under=true;e.cd=T0.cool+1.2;}return [0,0];}
+    e.state='under';e.under=true;e.sink=Math.min(4.6,e.sink+dt*6);
+    if(dist<2.3&&e.cd<=0){e.state='erupt';e.t=0;e.hitDone=false;SFX.slam(e.x,e.z);return [0,0];}
+    return [dx/dist*T0.speed,dz/dist*T0.speed];},
+  elemental(e,dt,dx,dz,dist,gy,T0){
+    if(e.state==='nova'){if(!e.hitDone&&e.t>0.75){e.hitDone=true;shockRing(e.x,e.y,e.z,T0.orb,5.5,0.5);SFX.boom(e.x,e.z,0.3);
+        for(let i=0;i<30;i++){rsphere(_r,fr(4,9));const c=cC(T0.orb);PA.spawn(e.x,e.y,e.z,_r.x,_r.y,_r.z,fr(0.4,0.8),0.3,0.04,c.r,c.g,c.b,1,c.r,c.g*0.6,c.b*0.5,0,1.2);}
+        if(dist<5&&Math.abs(player.feet+1-e.y)<3){hurtPlayer(T0.dmg*1.3*(e.dmgMul||1),e.x,e.z,13,e);applyStatus(T0.hit);}}
+      if(e.t>1.1){e.state='chase';e.t=0;e.chargeCd=fr(5,7);}return [0,0];}
+    if(dist<4.5&&e.chargeCd<=0){e.state='nova';e.t=0;e.hitDone=false;return [0,0];}
+    return null;}
+};
+/* treant roots: a warning ring, then thorny roots burst up and grab */
+const ROOTS=[],ROOT_GEO=new T.ConeGeometry(0.2,1.9,6),ROOT_MAT=stdMat(0x5a3e26,{roughness:0.9});
+function rootsAt(x,z,e){ROOTS.push({x,z,t:0,e,hit:false,g:null});shockRing(x,groundH(x,z)+0.15,z,0x8ac04a,2.4,0.8);}
+function updateRoots(dt){
+  for(let k=ROOTS.length-1;k>=0;k--){const r=ROOTS[k];r.t+=dt;const gy=groundH(r.x,r.z);
+    if(r.t<0.85){if(Math.random()<0.8){const a=Math.random()*6.283;PA.spawn(r.x+Math.cos(a)*2.2,gy+0.1,r.z+Math.sin(a)*2.2,0,fr(0.3,0.8),0,0.5,0.18,0.03,0.6,0.9,0.3,0.9,0.4,0.6,0.2,0,0);}continue;}
+    if(!r.g){r.g=new T.Group();r.g.position.set(r.x,gy,r.z);for(let i=0;i<8;i++){const a=i/8*6.283+Math.random()*0.4,d=i?fr(0.6,1.9):0,m=new T.Mesh(ROOT_GEO,ROOT_MAT);m.position.set(Math.cos(a)*d,0,Math.sin(a)*d);m.rotation.set(fr(-0.35,0.35),0,fr(-0.35,0.35));m.scale.setScalar(fr(0.7,1.3));m.castShadow=true;r.g.add(m);}
+      scene.add(r.g);SFX.slam(r.x,r.z);for(let q=0;q<16;q++)PB.spawn(r.x+fr(-1.8,1.8),gy+0.2,r.z+fr(-1.8,1.8),fr(-1,1),fr(1,3),fr(-1,1),fr(0.8,1.4),0.4,1.3,0.45,0.36,0.24,0.6,0.55,0.48,0.36,6,1);
+      if(Math.hypot(player.x-r.x,player.z-r.z)<2.4&&player.feet-groundH(player.x,player.z)<0.8&&!player.dead){const e=r.e;hurtPlayer(e.T.dmg*0.9*(e.dmgMul||1),r.x,r.z,3,e);player.chillT=Math.max(player.chillT||0,time+2.2);applyStatus(e.T.hit);toast('Roots grab your feet');}}
+    const k2=r.t-0.85,up=k2<0.18?k2/0.18:k2>1.3?Math.max(0,1-(k2-1.3)/0.4):1;r.g.position.y=gy-1.9*(1-up)+0.3;
+    if(k2>1.75){scene.remove(r.g);ROOTS.splice(k,1);}}
+}
+function splitSlime(e){const n=e.T.scale>1.1?3:2;for(let i=0;i<n;i++){const a=i/n*6.283+Math.random(),s=spawnEnemy(e.type,e.x+Math.cos(a)*0.7,e.z+Math.sin(a)*0.7,{camp:e.camp,home:e.home,aggro:true,mini:true});
+  s.vx=Math.cos(a)*4;s.vz=Math.sin(a)*4;s.vy=5;s.y+=0.3;s.cd=0.8;}}
 function spawnEnemy(type,x,z,o){
   o=o||{};
-  const T0=ETYPES[type],base=T0.base||type,m=base==='imp'?buildImp():base==='golem'?buildGolem():base==='wisp'?buildWisp():base==='archer'?buildArcher():base==='brute'?buildBrute():base==='spider'?buildSpider():base==='wolf'?buildWolf():buildBoss();
+  const T0=ETYPES[type],base=T0.base||type,m=NEWB[base]?NEWB[base](T0):base==='imp'?buildImp():base==='golem'?buildGolem():base==='wisp'?buildWisp():base==='archer'?buildArcher():base==='brute'?buildBrute():base==='spider'?buildSpider():base==='wolf'?buildWolf():buildBoss();
   if(T0.recolor)T0.recolor.forEach((c,i)=>{if(m.mats[i])m.mats[i].color.set(new T.Color(c).convertSRGBToLinear());});if(T0.tail)addTail(m);if(T0.acc)addAcc(m,T0,base);if(m.halo&&T0.orb){m.halo.material.color.set(T0.orb);m.rings.forEach(r=>r.material.color.set(new T.Color(T0.orb).convertSRGBToLinear()));}
-  {const sc=(T0.scale||1)*(o.elite?1.45:1);if(sc!==1){m.g.scale.setScalar(sc);m.scale=sc;}}
+  {const sc=(T0.scale||1)*(o.elite?1.45:1)*(o.mini?0.55:1);if(sc!==1){m.g.scale.setScalar(sc);m.scale=sc;}}
   m.g.traverse(q=>{if(q.isMesh&&!q.material.isMeshBasicMaterial)q.castShadow=true;});
   m.base=m.mats.map(mt=>mt.emissive.clone());
   const bg=new T.Sprite(barBgMat),fill=new T.Sprite(new T.SpriteMaterial({color:0xff5a3c,depthTest:false,toneMapped:false}));
@@ -4350,7 +4507,7 @@ function spawnEnemy(type,x,z,o){
   const e={id:eid++,type,T:T0,m,x,z,y:rise?(T0.fly?gy:gy-T0.h):(T0.fly?gy+T0.fly:gy),vx:0,vy:0,vz:0,hp:T0.hp,max:T0.hp,state:rise?'rise':'idle',t:0,cd:1+Math.random(),
     frozen:0,rooted:0,stun:0,burn:0,flash:0,yaw:Math.random()*6.283,yawT:null,phase:Math.random()*6,bar:{bg,fill},offset:fr(-0.7,0.7),debrisT:0,windId:0,
     camp:o.camp||null,home:o.home||{x,z,r:6},aggro:!!o.aggro,wp:null,wT:0,chargeCd:2,dir:null,hitDone:false,minion:!!o.minion,despawn:false};
-  e.base=base;e.lv=(ELV[type]||1)+(o.elite?2:0);e.badge=mkBadge(e);if(o.elite){e.elite=true;e.hp=e.max=T0.hp*4;e.dmgMul=1.5;const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xffd24a,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.45}));gl.scale.set(2.4,2.4,1);gl.position.y=T0.fly?0:T0.h/(m.scale||1)*0.55;m.g.add(gl);}
+  e.base=base;e.mini=!!o.mini;e.lv=Math.max(1,(ELV[type]||1)+(o.elite?2:0)-(o.mini?1:0));e.badge=mkBadge(e);if(o.mini){e.hp=e.max=T0.hp*0.3;}if(base==='worm'){e.under=true;e.sink=4.6;e.y=groundH(x,z)-4.6;}if(o.elite){e.elite=true;e.hp=e.max=T0.hp*4;e.dmgMul=1.5;const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xffd24a,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.45}));gl.scale.set(2.4,2.4,1);gl.position.y=T0.fly?0:T0.h/(m.scale||1)*0.55;m.g.add(gl);}
   if(T0.fly&&rise)e.m.g.scale.setScalar(0.01);
   enemies.push(e);
   if(type==='golem'&&rise)SFX.growl(x,z);
@@ -4497,7 +4654,7 @@ function collideBody(o,r,hs){
 }
 function hitMarker(){const c=$('cross');c.classList.remove('hit');void c.offsetWidth;c.classList.add('hit');}
 function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
-  if(e.state==='dead')return;
+  if(e.state==='dead'||e.under)return;if(e.base==='beetle'&&(e.state==='charge'||e.state==='roar'))dmg*=0.3;
   if(e.T.boss){if(o)o=Object.assign({},o,{freeze:o.freeze?1.5:0,root:o.root?1.5:0,stun:0});kx=(kx||0)*0.3;kz=(kz||0)*0.3;ky=0;
     if(!BOSS.engaged&&!quiet){BOSS.engaged=true;BOSS.next=2;bossEl.hidden=false;SFX.bossRoar();}}
   if(!e.aggro&&!quiet){e.aggro=true;alertCamp(e.camp);}
@@ -4539,7 +4696,7 @@ function killEnemy(e,quiet){
   if(e.state==='dead')return;e.state='dead';e.t=0;e.bar.bg.visible=e.bar.fill.visible=false;
   const cx=e.x,cy=e.y+(e.T.fly?0:e.T.h*0.5),cz=e.z;
   if(quiet){for(let i=0;i<12;i++){rsphere(_r,fr(1,3));PB.spawn(cx,cy,cz,_r.x,_r.y+1,_r.z,fr(1,2),0.6,1.6,0.5,0.48,0.45,0.4,0.6,0.58,0.55,-0.2,1);}return;}
-  COMBAT.kills++;updateHud();onEnemyKilled(e);
+  COMBAT.kills++;updateHud();onEnemyKilled(e);if(e.T.split&&!e.mini)splitSlime(e);
   if(e.base!=='wisp'&&e.base!=='golem'&&e.type!=='boss'){SFX.pop(cx,cz,'imp');
     for(let i=0;i<26;i++){rsphere(_r,fr(2,7));const g=Math.random();PB.spawn(cx,cy,cz,_r.x,_r.y+2,_r.z,fr(1.2,2.6),0.17,0.1,0.25+g*0.2,0.38+g*0.25,0.12,1,0.2,0.3,0.1,3,0.8,4);}
     for(let i=0;i<6;i++)smoke(cx,cy,cz,0.6,0.4);}
@@ -4643,6 +4800,7 @@ function animateEnemy(e,dt){
     m.g.position.y+=Math.abs(Math.sin(e.phase*1.6))*0.03*mv-(e.state==='crouch'?0.14:0);}}
   else if(e.base==='wisp'){if(!frozen){m.head.rotation.y+=dt*1.5;m.rings[0].rotation.z+=dt*2.4;m.rings[1].rotation.z-=dt*1.7;}
     const w=e.state==='wind'?Math.min(1,e.t/T0.windup):0;m.head.scale.setScalar(1+w*0.25+Math.sin(time*6+e.id)*0.04);m.halo.material.opacity=0.55+w*0.45;}
+  else if(ANIMX[e.base]){if(!frozen)ANIMX[e.base](e,dt,mv);}
   else if(!frozen){
     L.legL.rotation.x=sw*0.7*mv;L.legR.rotation.x=-sw*0.7*mv;
     let aL=-sw*0.6*mv,aR=sw*0.6*mv;
@@ -4656,7 +4814,7 @@ function animateEnemy(e,dt){
   for(let i=0;i<m.mats.length;i++){const b=m.base[i];m.mats[i].emissive.setRGB(b.r+fl*0.9+br*0.9+fz*0.2,b.g+fl*0.9+br*0.3+fz*0.5+rt*0.35,b.b+fl*0.9+fz*0.85+rt*0.05);}
   if(e.rooted>0&&Math.random()<0.35)PA.spawn(e.x+fr(-0.5,0.5),groundH(e.x,e.z)+fr(0,0.8),e.z+fr(-0.5,0.5),0,fr(0.2,0.8),0,fr(0.5,1),0.14,0.03,0.5,1,0.4,0.9,0.2,0.8,0.2,0,0);
   if(frozen&&Math.random()<0.25)PA.spawn(e.x+fr(-0.5,0.5),e.y+fr(0,T0.h),e.z+fr(-0.5,0.5),0,-0.3,0,fr(0.6,1.2),0.1,0.03,0.9,0.97,1,0.8,0.6,0.85,1,0,0,4);
-  const show=!T0.boss&&e.hp<e.max&&e.state!=='dead'&&Math.hypot(e.x-player.x,e.z-player.z)<45;
+  const show=!T0.boss&&!e.under&&e.hp<e.max&&e.state!=='dead'&&Math.hypot(e.x-player.x,e.z-player.z)<45;
   e.bar.bg.visible=e.bar.fill.visible=show;
   if(e.badge)updateBadge(e,show);
   if(e.m.wings||e.m.claws)animAcc(e);
@@ -4796,17 +4954,17 @@ canvas.addEventListener('mousedown',e=>{
 /* ── camps, roaming packs and the boss lair ── */
 const ROAMERS=[];
 (function(){
-  const pool=['imp','imp','spider','archer','wisp','brute','imp','spider'];let g=0;
+  const pool=['imp','imp','spider','archer','wisp','brute','imp','spider','greenslime','greenslime','duskbat','duskbat'];let g=0;
   while(ROAMERS.length<12&&g++<600){const a=rnd()*6.28,R=rr(55,225),x=Math.cos(a)*R,z=Math.sin(a)*R;
     if(avoid(x,z,6)||Math.hypot(x-START.x,z-START.z)<45||ROAMERS.some(o=>Math.hypot(o.x-x,o.z-z)<30))continue;
     const n=1+Math.floor(rnd()*3),crew=[];for(let i=0;i<n;i++)crew.push(pool[Math.floor(rnd()*pool.length)]);
     ROAMERS.push({name:null,kind:'roam',x,z,r:7,crew});}
 })();
-(function(){const pools=[['frostwolf','frostwolf','icegolem'],['fireimp','fireimp','magmagolem'],['scorpion','scorpion','mummy'],['bog','swampwisp','swampwisp','spider'],['crystalgolem','shardwisp','shardwisp'],['raider','raider','basilisk'],['stalker','junglespider','vinehorror','stalker'],['skeleton','skeleton','ghost']];let g=0,n=0;
+(function(){const pools=[['frostwolf','frostwolf','icegolem','frostslime','frostslime','frostbark','iceelem'],['fireimp','fireimp','magmagolem','magmaslime','magmaslime','emberelem'],['scorpion','scorpion','mummy','sandwyrm'],['bog','swampwisp','swampwisp','spider','mirebeetle','mirebeetle','greenslime'],['crystalgolem','shardwisp','shardwisp','crystalbeetle','crystalbeetle'],['raider','raider','basilisk','shellback','shellback'],['stalker','junglespider','vinehorror','stalker','thornback'],['skeleton','skeleton','ghost','gravebat','gravebat']];let g=0,n=0;
   while(n<56&&g++<6000){const b=n%8,a=BIOMES[b].a+rr(-1,1)*(b<4?0.8:0.4),R=b<4?rr(330,1100):rr(OUT0+20,1120),x=Math.cos(a)*R,z=Math.sin(a)*R;biomeW(x,z,_bw);
     if(_bw[b]<0.6||avoid(x,z,6)||ROAMERS.some(o=>Math.hypot(o.x-x,o.z-z)<34))continue;
     const k=1+Math.floor(rnd()*3),crew=[];for(let i=0;i<k;i++)crew.push(pools[b][Math.floor(rnd()*pools[b].length)]);ROAMERS.push({name:null,kind:'roam',x,z,r:7,crew});n++;}})();
-(function(){const pools={8:['griffin','griffin','stormwisp','stormwisp','skyguard'],9:['lavahound','lavahound','cinderimp','cinderimp','obsidiangolem'],10:['crab','crab','crab','naga','seabrute'],11:['shroomling','shroomling','cavespider','cavespider','sporebeast']},big=['skyguard','obsidiangolem','seabrute','sporebeast'];let g=0,n=0;
+(function(){const pools={8:['griffin','griffin','stormwisp','stormwisp','skyguard','stormelem'],9:['lavahound','lavahound','cinderimp','cinderimp','obsidiangolem','emberbat','emberbat','ashwyrm'],10:['crab','crab','crab','naga','seabrute','burroweel'],11:['shroomling','shroomling','cavespider','cavespider','sporebeast','sporeslime']},big=['skyguard','obsidiangolem','seabrute','sporebeast','ashwyrm','burroweel','stormelem'];let g=0,n=0;
   while(n<44&&g++<8000){const b=8+n%4,a=BIOMES[b].a+rr(-0.85,0.85),R=rr(OUT3+10,PLAY_R-30),x=Math.cos(a)*R,z=Math.sin(a)*R;biomeW(x,z,_bw);
     if(_bw[b]<0.6||avoid(x,z,6)||ROAMERS.some(o=>Math.hypot(o.x-x,o.z-z)<40))continue;
     const k=1+Math.floor(rnd()*3),crew=[];for(let i=0;i<k;i++){let t=pools[b][Math.floor(rnd()*pools[b].length)];if(i>0&&big.includes(t))t=pools[b][0];crew.push(t);}ROAMERS.push({name:null,kind:'roam',x,z,r:7,crew});n++;}})();
@@ -4960,13 +5118,15 @@ function updateEnemies(dt){
     }else if(act){
       if(e.state==='idle'||e.state==='return'){e.state='chase';e.t=0;}
       e.yawT=Math.atan2(dx,dz);
-      if(T0.ranged){
+      const spx=AIX[e.base],spr=spx&&spx(e,dt,dx,dz,dist,gy,T0);
+      if(spr){wx=spr[0];wz=spr[1];}
+      else if(T0.ranged){
         const near=T0.fly?9:11,far=T0.fly?16:20,f=dist>far?1:dist<near?-1:0,sx=-dz/dist,sz=dx/dist,str=Math.sin(time*0.7+e.id)*0.8;
         wx=(dx/dist*f+sx*str)*T0.speed;wz=(dz/dist*f+sz*str)*T0.speed;
         if(e.state==='chase'&&e.cd<=0&&dist<30){e.state='wind';e.t=0;}
         if(e.state==='wind'){wx*=0.2;wz*=0.2;if(e.t>=T0.windup){if(T0.fly||T0.orb)fireOrb(e);else fireArrow(e);e.state='chase';e.t=0;e.cd=T0.cool+Math.random()*0.8;}}
         if(e.state!=='chase'&&e.state!=='wind')e.state='chase';
-      }else if(e.base==='brute'&&(e.state==='roar'||e.state==='charge')){
+      }else if((e.base==='brute'||e.base==='beetle')&&(e.state==='roar'||e.state==='charge')){
         if(e.state==='roar'){if(e.t>=0.7){e.state='charge';e.t=0;e.hitDone=false;}}
         else{wx=e.dir[0]*11;wz=e.dir[1]*11;e.yawT=Math.atan2(e.dir[0],e.dir[1]);
           if(Math.random()<0.6)PB.spawn(e.x,gy+0.2,e.z,fr(-1,1),fr(0.5,1.5),fr(-1,1),fr(0.6,1.2),0.4,1.4,0.55,0.48,0.38,0.5,0.62,0.58,0.5,0,1.5);
@@ -4974,14 +5134,17 @@ function updateEnemies(dt){
           let wall=false;forNeighbors(e.x+e.dir[0]*1.2,e.y+1.2,e.z+e.dir[1]*1.2,j=>{if(wall||pstate[j]!==S_INTACT)return;if(Math.hypot(pp[j*3]-e.x-e.dir[0]*1.2,pp[j*3+2]-e.z-e.dir[1]*1.2)<pbound[j]+0.6)wall=true;});
           if(wall){blast(e.x+e.dir[0]*1.4,e.y+1.2,e.z+e.dir[1]*1.4,2.8,17,0.4);shake(0.4,e.x,e.z);SFX.slam(e.x,e.z);e.stun=0.9;e.state='chase';e.vx*=-0.3;e.vz*=-0.3;}
           else if(e.t>1.3){e.state='chase';e.t=0;}}
-      }else if(e.base==='spider'&&(e.state==='crouch'||e.state==='leap')){
-        if(e.state==='crouch'){if(e.t>=0.3){e.state='leap';e.t=0;e.hitDone=false;const s2=Math.min(11,dist/0.75);e.vx=dx/dist*s2;e.vz=dz/dist*s2;e.vy=6;e.y+=0.05;}}
+      }else if((e.base==='spider'||e.base==='slime')&&(e.state==='crouch'||e.state==='leap')){
+        if(e.state==='crouch'){if(e.t>=0.3){e.state='leap';e.t=0;e.hitDone=false;const s2=e.base==='slime'?Math.min(T0.speed*2.8,dist/0.6):Math.min(11,dist/0.75);e.vx=dx/dist*s2;e.vz=dz/dist*s2;e.vy=6;e.y+=0.05;}}
         else{wx=e.vx;wz=e.vz;if(!e.hitDone&&dist<1.3&&Math.abs(player.feet+0.6-e.y)<1.3){e.hitDone=true;hurtPlayer(T0.dmg*(e.dmgMul||1),e.x,e.z,4,e);applyStatus(T0.hit);}
           if(e.t>0.25&&e.y<=groundH(e.x,e.z)+0.02){e.state='recover';e.t=0;e.cd=T0.cool;}}
+      }else if(e.base==='treant'&&e.state==='roar'){if(e.t>1.1){e.state='chase';e.t=0;}
       }else if(e.state==='chase'){
         if(dist>T0.reach*0.85){const ox=-dz/dist*e.offset,oz=dx/dist*e.offset,b=Math.min(1,dist/8)*0.5;wx=(dx/dist+ox*b)*T0.speed;wz=(dz/dist+oz*b)*T0.speed;}
-        if(e.base==='brute'&&e.chargeCd<=0&&dist>6&&dist<18){e.state='roar';e.t=0;e.chargeCd=fr(6,9);e.dir=[dx/dist,dz/dist];SFX.growl(e.x,e.z);}
+        if((e.base==='brute'||e.base==='beetle')&&e.chargeCd<=0&&dist>6&&dist<18){e.state='roar';e.t=0;e.chargeCd=fr(6,9);e.dir=[dx/dist,dz/dist];SFX.growl(e.x,e.z);}
         else if(e.base==='spider'&&e.cd<=0&&dist>2.2&&dist<7){e.state='crouch';e.t=0;}
+        else if(e.base==='slime'&&e.cd<=0&&dist<15){e.state='crouch';e.t=0;}
+        else if(e.base==='treant'&&e.chargeCd<=0&&dist>3.5&&dist<16){e.state='roar';e.t=0;e.chargeCd=fr(6,9);rootsAt(player.x,player.z,e);SFX.growl(e.x,e.z);}
         else if(dist<T0.reach&&e.cd<=0){e.state='wind';e.t=0;if(e.base==='golem')SFX.growl(e.x,e.z);}
       }else if(e.state==='wind'){if(e.t>=T0.windup){e.state='recover';e.t=0;e.cd=T0.cool;enemyStrike(e,dist);}}
       else if(e.state==='recover'){if(e.t>0.45){e.state='chase';e.t=0;}}
@@ -4992,10 +5155,11 @@ function updateEnemies(dt){
     if(e.state!=='rise'){
       const air=!T0.fly&&e.y>gy+0.05,kk=Math.min(1,dt*(air?0.6:7));
       e.vx+=(wx-e.vx)*kk;e.vz+=(wz-e.vz)*kk;e.x+=e.vx*dt;e.z+=e.vz*dt;
-      if(T0.fly){const ty=gy+T0.fly+Math.sin(time*2+e.id)*0.3;e.vy+=(ty-e.y)*4*dt;e.vy*=1-Math.min(1,2.5*dt);e.y+=e.vy*dt;if(e.y<gy+0.4){e.y=gy+0.4;e.vy=Math.abs(e.vy)*0.3;}}
+      if(T0.fly){const ty=gy+(e.flyY!=null?e.flyY:T0.fly)+Math.sin(time*2+e.id)*0.3;e.vy+=(ty-e.y)*(e.flyK||4)*dt;e.vy*=1-Math.min(1,2.5*dt);e.y+=e.vy*dt;if(e.y<gy+0.4){e.y=gy+0.4;e.vy=Math.abs(e.vy)*0.3;}}
       else{const fl=floorAt(e.x,e.z,e.y);e.vy-=GRAV*dt;e.y+=e.vy*dt;
         if(e.y<=fl){if(e.vy<-12)damageEnemy(e,(-e.vy-12)*3,0,0,0,null,true);e.y=fl;e.vy=0;}
         else if(e.vy<=0&&e.y-fl<0.4&&e.state!=='leap'){e.y=fl;e.vy=0;}}
+      if(e.base==='worm')e.y=gy-(e.sink==null?4.6:e.sink);
       if(e.state==='dead')continue;
       collideBody(e,T0.r,T0.fly?[0]:[0.55,Math.max(0.6,T0.h*0.75)]);
       for(const o of enemies){if(o===e||o.state==='dead'||o.despawn)continue;const sx=e.x-o.x,sz=e.z-o.z,d=Math.hypot(sx,sz),mn=T0.r+o.T.r;if(d<mn&&d>1e-4&&Math.abs(e.y-o.y)<2){const p=(mn-d)*(o.T.boss?1:0.5);e.x+=sx/d*p;e.z+=sz/d*p;}}
@@ -5005,7 +5169,7 @@ function updateEnemies(dt){
     }
     animateEnemy(e,dt);
   }
-  updateShots(dt);debrisHits();updateVillagers(dt);
+  updateRoots(dt);updateShots(dt);debrisHits();updateVillagers(dt);
   if(!player.dead){
     let well=false;for(const v of VILLAGES)if(v.fear<time&&Math.hypot(player.x-v.x,player.z-v.z)<5)well=true;
     if(well&&player.hp<player.max){player.hp=Math.min(player.max,player.hp+18*dt);if(Math.random()<0.4)PA.spawn(player.x+fr(-0.6,0.6),player.feet+fr(0.2,1.6),player.z+fr(-0.6,0.6),0,fr(0.6,1.4),0,fr(0.6,1.1),0.14,0.03,0.5,1,0.5,0.9,0.4,0.9,0.6,0,0);}
@@ -5132,6 +5296,12 @@ const ITEMS={
   shell:{name:'Coral Shell',desc:'A pink shell from a reef crab.',color:'#ff9a8a',cat:3},
   pearl:{name:'Sea Pearl',desc:'A rare pearl. Merchants pay well for it.',color:'#f4f0ff',cat:3},
   spore:{name:'Spore Sac',desc:'A soft, glowing pouch of spores.',color:'#b88aff',cat:3},
+  gel:{name:'Slime Gel',desc:'Wobbly, sticky and faintly glowing.',color:'#7ad86a',cat:3},
+  batwing:{name:'Bat Wing',desc:'A leathery wing, thin as paper.',color:'#6a5a78',cat:3},
+  heartwood:{name:'Heartwood',desc:'The living core of a treant. Still warm.',color:'#a0703a',cat:3},
+  chitin:{name:'Beetle Chitin',desc:'A plate of shell harder than iron.',color:'#5a8a4a',cat:3},
+  wyrmtooth:{name:'Wyrm Tooth',desc:'A tooth as long as your hand.',color:'#f0e6cc',cat:3},
+  ecore:{name:'Elemental Core',desc:'A stone that holds a spark of raw magic.',color:'#ffb84a',cat:3},
   heart:{name:'Heartstone',desc:'A rare red stone carried by elite monsters. Needed for the mightiest spells.',color:'#ff3a5a',cat:4},
   rfire:{name:'Rune of Fire',desc:'Needed to master Pyromancy.',color:'#ff7a2a',cat:5},
   rfrost:{name:'Rune of Frost',desc:'Needed to master Cryomancy.',color:'#8fe3ff',cat:5},
@@ -5181,6 +5351,12 @@ const LOOT_TABLE={
   skyguard:{xp:280,gold:[24,44],drops:[['talon',0.3],['livecrystal',0.4],['tome',0.1]]},
   seabrute:{xp:320,gold:[26,48],drops:[['pearl',0.4],['shell',0.6],['potion',0.3]]},
   obsidiangolem:{xp:360,gold:[30,56],drops:[['obsidian',0.9],['heart',0.06],['tome',0.12]]},
+  greenslime:{xp:12,gold:[1,4],drops:[['gel',0.6]]},frostslime:{xp:40,gold:[3,8],drops:[['gel',0.6],['icecrystal',0.15]]},magmaslime:{xp:55,gold:[4,10],drops:[['gel',0.6],['ember',0.3]]},sporeslime:{xp:130,gold:[8,18],drops:[['gel',0.6],['spore',0.35]]},
+  duskbat:{xp:14,gold:[1,4],drops:[['batwing',0.6]]},gravebat:{xp:100,gold:[6,14],drops:[['batwing',0.6],['ecto',0.2]]},emberbat:{xp:170,gold:[12,24],drops:[['batwing',0.6],['obsidian',0.25]]},
+  oakheart:{xp:90,gold:[10,20],drops:[['heartwood',0.8],['sunleaf',0.5],['potion',0.2]]},frostbark:{xp:110,gold:[12,22],drops:[['heartwood',0.8],['frostbloom',0.4]]},thornback:{xp:150,gold:[14,26],drops:[['heartwood',0.8],['vineheart',0.3],['heart',0.04]]},
+  sandwyrm:{xp:70,gold:[8,16],drops:[['wyrmtooth',0.7],['sandrose',0.25]]},burroweel:{xp:220,gold:[18,32],drops:[['wyrmtooth',0.7],['pearl',0.1]]},ashwyrm:{xp:320,gold:[26,46],drops:[['wyrmtooth',0.8],['obsidian',0.4],['heart',0.05]]},
+  mirebeetle:{xp:60,gold:[6,12],drops:[['chitin',0.7],['bogmoss',0.3]]},shellback:{xp:110,gold:[10,20],drops:[['chitin',0.75],['ironore',0.3]]},crystalbeetle:{xp:140,gold:[12,24],drops:[['chitin',0.6],['livecrystal',0.35]]},
+  emberelem:{xp:85,gold:[8,16],drops:[['ecore',0.6],['fireopal',0.2]]},iceelem:{xp:80,gold:[8,16],drops:[['ecore',0.6],['icecrystal',0.25]]},stormelem:{xp:220,gold:[18,32],drops:[['ecore',0.7],['stormglass',0.3]]},
   villager:{xp:5,gold:[2,8],drops:[['potion',0.06]]}
 };
 const QUESTS={
@@ -5230,7 +5406,7 @@ for(const v of VILLAGES)v.fear=0;
 /* icons drawn in code */
 const ICON_CV={},ICON_TX={},ICON_URL={};
 const ICON_SHAPE={sunleaf:'leaf',moonpetal:'flower',feather:'feather',frostbloom:'flower',icecrystal:'crystal',fireopal:'gem',sulfur:'lump',sandrose:'flower',sunstone:'gem',glowcap:'shroom',
-  stormglass:'crystal',prism:'prism',ironore:'lump',vineheart:'heartleaf',orchid:'flower',gravedust:'pile',livecrystal:'crystal',scale:'scale',fang:'fang',vineroot:'root',bone:'bone',ecto:'blob',heart:'heartgem',dust:'pile',talon:'fang',obsidian:'crystal',shell:'scale',pearl:'gem',spore:'shroom'};
+  stormglass:'crystal',prism:'prism',ironore:'lump',vineheart:'heartleaf',orchid:'flower',gravedust:'pile',livecrystal:'crystal',scale:'scale',fang:'fang',vineroot:'root',bone:'bone',ecto:'blob',heart:'heartgem',dust:'pile',talon:'fang',obsidian:'crystal',shell:'scale',pearl:'gem',spore:'shroom',gel:'blob',batwing:'leaf',heartwood:'root',chitin:'scale',wyrmtooth:'fang',ecore:'heartgem'};
 function drawShape(x,id,col){
   x.lineCap='round';x.lineJoin='round';const dk='rgba(30,20,10,.55)';
   const s=ICON_SHAPE[id]||(id[0]==='r'&&ITEMS[id]&&ITEMS[id].cat===5?'rune':'gem');
@@ -5431,7 +5607,7 @@ function dropTable(key,x,y,z){
   if(g>0)dropItem(x,y,z,'gold',g);for(const d of L.drops)if(Math.random()<d[1])dropItem(x,y,z,d[0],1);
 }
 function onEnemyKilled(e){
-  const L=LOOT_TABLE[e.type];xpBurst(e.x,(e.T.fly?e.y:e.y+e.T.h*0.5*(e.m.scale||1)),e.z,L.xp*(e.elite?5:1)*xpLvMul(e),(e.elite?'Elite ':'')+e.T.name);if(e.elite){dropItem(e.x,e.y+1,e.z,'tome',1);dropItem(e.x,e.y+1,e.z,'gold',Math.round(fr(40,80)));if(Math.random()<0.35)dropItem(e.x,e.y+1,e.z,'heart',1);}dropTable(e.type,e.x,e.y+(e.T.fly?0:Math.min(2,e.T.h*0.5)),e.z);
+  const L=LOOT_TABLE[e.type];xpBurst(e.x,(e.T.fly?e.y:e.y+e.T.h*0.5*(e.m.scale||1)),e.z,L.xp*(e.elite?5:1)*(e.mini?0.3:1)*xpLvMul(e),(e.elite?'Elite ':'')+e.T.name);if(e.elite){dropItem(e.x,e.y+1,e.z,'tome',1);dropItem(e.x,e.y+1,e.z,'gold',Math.round(fr(40,80)));if(Math.random()<0.35)dropItem(e.x,e.y+1,e.z,'heart',1);}dropTable(e.type,e.x,e.y+(e.T.fly?0:Math.min(2,e.T.h*0.5)),e.z);
   questEvent('kill',e.type,1);
 }
 function useItem(id){
@@ -5508,7 +5684,7 @@ const UPGRADES={
   luck:{name:'Lucky Coin',desc:'Monsters drop 30% more gold per tier.',prices:[100,250]},
   broom:{name:'Flying Broom',desc:'Fly anywhere in Meadowvale: B to ride, Space to rise, C to dive, Shift for speed. Tier 2, the Swiftwind, flies half again as fast.',prices:[500,1200]}
 };
-const SELL={horn:6,fletch:5,silk:8,essence:15,tusk:18,core:25,shard:120,pelt:12,frostcore:40,stinger:12,wraps:14,ember:16,bogmoss:14,dust:3,livecrystal:30,scale:16,fang:14,vineroot:18,bone:12,ecto:16,heart:150,sunleaf:4,moonpetal:6,feather:5,frostbloom:7,icecrystal:8,fireopal:9,sulfur:6,sandrose:7,sunstone:10,glowcap:6,stormglass:10,prism:12,ironore:7,vineheart:9,orchid:10,gravedust:7,talon:26,obsidian:28,shell:18,pearl:70,spore:18};
+const SELL={horn:6,fletch:5,silk:8,essence:15,tusk:18,core:25,shard:120,pelt:12,frostcore:40,stinger:12,wraps:14,ember:16,bogmoss:14,dust:3,livecrystal:30,scale:16,fang:14,vineroot:18,bone:12,ecto:16,heart:150,sunleaf:4,moonpetal:6,feather:5,frostbloom:7,icecrystal:8,fireopal:9,sulfur:6,sandrose:7,sunstone:10,glowcap:6,stormglass:10,prism:12,ironore:7,vineheart:9,orchid:10,gravedust:7,talon:26,obsidian:28,shell:18,pearl:70,spore:18,gel:6,batwing:8,heartwood:22,chitin:16,wyrmtooth:24,ecore:30};
 for(const el of ELS)SELL['r'+el]=110;
 Object.assign(ITEMS,{robes:{name:'Sturdy Robes',color:'#7a4fb0'},focus:{name:'Focus Crystal',color:'#7fd4ff'},boots:{name:'Quickstep Boots',color:'#a0703a'},sigil:{name:'Swift Sigil',color:'#ffe45c'},luck:{name:'Lucky Coin',color:'#5ad46a'},broom:{name:'Flying Broom',color:'#e0a858'}});
 function buildMerchant(){
