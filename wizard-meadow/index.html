@@ -662,6 +662,19 @@ const TOWER={x:-11,z:-15}, COT={x:13,z:-5,yaw:-0.35}, RUIN={x:-25,z:11}, WELL={x
 const FARM={x:80,z:64,yaw:0.32,hw:17,hd:12}, STONES={x:98,z:-60}, LAKE={x:-98,z:60,r:30}, DARK={x:-120,z:-70};
 const PLAY_R=1660, OLD_R=960, FLAT0=40, FLAT1=88, RING0=250, RING1=340, OUT0=600, OUT1=700, OUT2=1100, OUT3=1220;
 const SWAMP_Y=-0.45, SEA_Y=-0.9, VOLC={x:1440,z:0,r:270};
+/* Aeloria, the sky kingdom: islands high above the Coral Coast sea that only a broom can reach */
+const KING=(function(){const K={x:60,z:1555,y:118,r:62,cx:60,cz:1532,px:60,pz:1580,sats:[{x:-52,z:1496,r:20,y:115},{x:168,z:1490,r:20,y:121}],bridges:[],seen:false};
+  for(const s of K.sats){const dx=s.x-K.x,dz=s.z-K.z,d=Math.hypot(dx,dz),ux=dx/d,uz=dz/d;K.bridges.push({ax:K.x+ux*(K.r-3),az:K.z+uz*(K.r-3),ay:K.y,bx:s.x-ux*(s.r-3),bz:s.z-uz*(s.r-3),by:s.y});}
+  K.bx0=Math.min(K.x-K.r,...K.sats.map(s=>s.x-s.r))-3;K.bx1=Math.max(K.x+K.r,...K.sats.map(s=>s.x+s.r))+3;K.bz0=Math.min(K.z-K.r,...K.sats.map(s=>s.z-s.r))-3;K.bz1=Math.max(K.z+K.r,...K.sats.map(s=>s.z+s.r))+3;return K;})();
+let SKYCTX=false; // true while you are up in Aeloria: then its floors count as the ground
+function kingH(x,z){const K=KING;if(x<K.bx0||x>K.bx1||z<K.bz0||z>K.bz1)return -1e9;let h=-1e9;
+  if(Math.hypot(x-K.x,z-K.z)<K.r)h=K.y+Math.sin(x*0.09)*Math.cos(z*0.08)*0.2+4*(1-smooth(19,25,Math.hypot(x-K.cx,z-K.cz)));
+  for(const s of K.sats)if(Math.hypot(x-s.x,z-s.z)<s.r)h=Math.max(h,s.y);
+  for(const b of K.bridges){const vx=b.bx-b.ax,vz=b.bz-b.az,t=((x-b.ax)*vx+(z-b.az)*vz)/(vx*vx+vz*vz);if(t<0||t>1)continue;const px=b.ax+vx*t-x,pz=b.az+vz*t-z;if(px*px+pz*pz<2.9)h=Math.max(h,lerp(b.ay,b.by,t)+0.35);}
+  return h;}
+function updateSkyCtx(){const K=KING,kh=kingH(player.x,player.z),was=SKYCTX;
+  if(kh>-1e8)SKYCTX=player.feet>kh-32;else if(SKYCTX)SKYCTX=player.x>K.bx0-6&&player.x<K.bx1+6&&player.z>K.bz0-6&&player.z<K.bz1+6&&player.feet>K.y-45;
+  if(SKYCTX&&!was&&!K.seen){K.seen=true;banner('Aeloria','The sky kingdom · only a broom can bring you here');}}
 const f3=v=>v.toFixed(3);
 /* the meadow sits in the middle; four biomes ring it, four more fill the corners, and four wild lands make the outer ring */
 const BIOMES=[
@@ -703,7 +716,8 @@ function rawH(x,z){
   const f=smooth(1690,1840,r);return h+f*f*80;
 }
 const VILLAGES=[{name:'Brookhollow',x:12,z:-128,r:26,yaw:0.2},{name:'Eastmere',x:150,z:22,r:26,yaw:-0.5},{name:'Hearthmoor',x:40,z:-430,r:26,yaw:0.4,style:'snow'},{name:'Sandhaven',x:-40,z:440,r:26,yaw:-0.3,style:'desert'},{name:'Redrock',x:570,z:407,r:26,yaw:0.62,style:'canyon'},{name:'Verdance',x:-569,z:408,r:26,yaw:2.52,style:'jungle'},
-  {name:'Highwatch',x:140,z:-1300,r:26,yaw:1.2,style:'sky'},{name:'Cinderholm',x:1240,z:-330,r:26,yaw:-2.9,style:'ash'},{name:'Saltmere',x:-150,z:1300,r:26,yaw:-1.6,style:'coast'},{name:'Sporewick',x:-1300,z:140,r:26,yaw:0.1,style:'fungal'}];
+  {name:'Highwatch',x:140,z:-1300,r:26,yaw:1.2,style:'sky'},{name:'Cinderholm',x:1240,z:-330,r:26,yaw:-2.9,style:'ash'},{name:'Saltmere',x:-150,z:1300,r:26,yaw:-1.6,style:'coast'},{name:'Sporewick',x:-1300,z:140,r:26,yaw:0.1,style:'fungal'},
+  {name:'Aeloria',x:KING.px,z:KING.pz,r:22,yaw:-1.2,style:'sky',sky:1}];
 const CROWN={x:-30,z:188,r:20};
 const CAMPS=[
   {name:'Goblin Camp',kind:'goblin',x:-158,z:-28,r:10,crew:['imp','imp','imp','archer','archer','brute']},
@@ -744,7 +758,9 @@ const CAMPS=[
   {name:'Heart of the Old Wood',kind:'oakgrove',x:-120,z:-70,r:9,crew:['oakheart','duskbat','duskbat','duskbat']},
   {name:'Wyrm Dunes',kind:'dunes',x:230,z:360,r:10,crew:['sandwyrm','sandwyrm','scorpion','scorpion']},
   {name:'Beetle Burrows',kind:'burrows',x:700,z:500,r:10,crew:['shellback*','shellback','shellback','shellback']},
-  {name:'Bat Belfry',kind:'belfry',x:-700,z:-430,r:10,crew:['gravebat','gravebat','gravebat','gravebat','skeleton']}
+  {name:'Bat Belfry',kind:'belfry',x:-700,z:-430,r:10,crew:['gravebat','gravebat','gravebat','gravebat','skeleton']},
+  {name:'Storm Rift',kind:'ruins',x:KING.sats[0].x,z:KING.sats[0].z,r:10,sky:1,crew:['stormelem*','stormwisp','stormwisp','stormelem']},
+  {name:'Griffin Eyrie',kind:'roost',x:KING.sats[1].x,z:KING.sats[1].z,r:10,sky:1,crew:['griffin','griffin','griffin','skyguard']}
 ];
 /* every named camp guards a chest; clearing the camp opens it to you */
 const CAMP_RUNE={'Goblin Camp':'wind','Spider Nest':'poison','Ogre Den':'earth','Wisp Shrine':'arcane','Raider Camp':'fire','Golem Quarry':'earth',
@@ -752,7 +768,7 @@ const CAMP_RUNE={'Goblin Camp':'wind','Spider Nest':'poison','Ogre Den':'earth',
   'Prism Spire':'storm','Geode Hollow':'arcane','Bandit Fort':'wind','Basilisk Nest':'earth','Overgrown Temple':'nature','Spider Grove':'poison','Haunted Crypt':'shadow','Bone Field':'light',
   'Stormcrown Aerie':'wind','Griffon Roost':'wind','Windward Ruins':'storm','Obsidian Citadel':'fire','Hound Pits':'fire','Cinder Shrine':'earth',
   'Sunken Wreck':'frost','Crab Shoals':'frost','Naga Grotto':'poison','Mycelium Heart':'poison','Shroomling Warren':'nature','Webbed Hollow':'shadow',
-  'Slime Pond':'poison','Heart of the Old Wood':'nature','Wyrm Dunes':'light','Beetle Burrows':'earth','Bat Belfry':'shadow'};
+  'Slime Pond':'poison','Heart of the Old Wood':'nature','Wyrm Dunes':'light','Beetle Burrows':'earth','Bat Belfry':'shadow','Storm Rift':'storm','Griffin Eyrie':'wind'};
 const LAVA_POOLS=[];
 (function(){let g=0;while(LAVA_POOLS.length<9&&g++<500){const a=rr(-0.75,0.75),R=rr(360,575),x=Math.cos(a)*R,z=Math.sin(a)*R,r=rr(5,10);
   if(CAMPS.some(c=>Math.hypot(c.x-x,c.z-z)<c.r+r+14)||LAVA_POOLS.some(p=>Math.hypot(p.x-x,p.z-z)<p.r+r+20))continue;LAVA_POOLS.push({x,z,r});}})();
@@ -763,12 +779,13 @@ LAVA_POOLS.push({x:VOLC.x,z:VOLC.z,r:24,crater:1});
 const LIGHT={x:-40,z:1410};
 const ISLES=[[-420,-1290,30,14],[-130,-1440,44,18],[270,-1250,26,12],[480,-1390,50,16],[-330,-1590,58,13],[150,-1590,38,15],[-620,-1360,34,12]].map(a=>({x:a[0],z:a[1],r:a[3],top:rawH(a[0],a[1])+a[2]}));
 const WAYSTONES=[{name:'Meadow Crossing',x:HUB.x+7,z:HUB.z+5,found:true},
-  ...VILLAGES.map(v=>({name:v.name,x:v.x+Math.cos(v.yaw+Math.PI)*10,z:v.z+Math.sin(v.yaw+Math.PI)*10})),
+  ...VILLAGES.filter(v=>!v.sky).map(v=>({name:v.name,x:v.x+Math.cos(v.yaw+Math.PI)*10,z:v.z+Math.sin(v.yaw+Math.PI)*10})),
   {name:'Crown Hollow',x:CROWN.x+6,z:CROWN.z-32},
   ...CAMPS.filter(c=>c.landmark).map(c=>{const d=Math.hypot(c.x,c.z);return {name:c.name,x:c.x-c.x/d*30,z:c.z-c.z/d*30};})];
 const PADS=[[FARM.x,FARM.z,24],[STONES.x,STONES.z,13],[LAKE.x,LAKE.z,LAKE.r+8]].concat(VILLAGES.map(v=>[v.x,v.z,v.r+4]),[[CROWN.x,CROWN.z,CROWN.r+7]],CAMPS.map(c=>[c.x,c.z,c.r+4]),LAVA_POOLS.map(p=>[p.x,p.z,p.r+3]),[[LIGHT.x,LIGHT.z,7]]).map(p=>[p[0],p[1],p[2],rawH(p[0],p[1])]);
 const WATER_Y=PADS[2][3]-0.9;
-function groundH(x,z){
+function groundH(x,z){const h=groundH0(x,z);if(SKYCTX){const k=kingH(x,z);if(k>h)return k;}return h;}
+function groundH0(x,z){
   let h=rawH(x,z);
   for(const p of PADS){const dx=x-p[0],dz=z-p[1],d=Math.sqrt(dx*dx+dz*dz);if(d<p[2]*1.7)h=lerp(h,p[3],1-smooth(p[2],p[2]*1.7,d));}
   const dl=Math.hypot(x-LAKE.x,z-LAKE.z);if(dl<LAKE.r*1.12)h-=2.3*(1-smooth(LAKE.r*0.45,LAKE.r*1.12,dl));
@@ -1005,7 +1022,7 @@ const gctx=gcan.getContext('2d');
   disc(TOWER.x,TOWER.z,3.1,'rgb(134,106,72)');disc(WELL.x,WELL.z,2.3,'rgb(134,106,72)');
   {gctx.save();gctx.translate(COT.x,COT.z);gctx.rotate(-COT.yaw);gctx.fillStyle='rgb(134,106,72)';gctx.fillRect(-3.8,-2.8,7.6,5.6);gctx.restore();}
   // village plazas: cobbles
-  for(const v of VILLAGES){disc(v.x,v.z,8.6,v.style==='sky'?'rgb(176,176,168)':v.style==='ash'?'rgb(84,70,64)':v.style==='coast'?'rgb(214,198,160)':v.style==='fungal'?'rgb(116,96,122)':v.style==='canyon'?'rgb(176,122,92)':v.style==='jungle'?'rgb(112,98,68)':v.style==='desert'?'rgb(196,170,122)':v.style==='snow'?'rgb(160,156,150)':'rgb(150,138,118)');
+  for(const v of VILLAGES){if(v.sky)continue;disc(v.x,v.z,8.6,v.style==='sky'?'rgb(176,176,168)':v.style==='ash'?'rgb(84,70,64)':v.style==='coast'?'rgb(214,198,160)':v.style==='fungal'?'rgb(116,96,122)':v.style==='canyon'?'rgb(176,122,92)':v.style==='jungle'?'rgb(112,98,68)':v.style==='desert'?'rgb(196,170,122)':v.style==='snow'?'rgb(160,156,150)':'rgb(150,138,118)');
     for(let i=0;i<260;i++){const a=rnd()*6.28,dd=Math.sqrt(rnd())*8.2;gctx.fillStyle='rgba(70,62,52,'+rr(0.2,0.45)+')';gctx.fillRect(v.x+Math.cos(a)*dd,v.z+Math.sin(a)*dd,rr(0.3,0.6),rr(0.3,0.6));}}
   // the Hollow King's arena floor
   disc(CROWN.x,CROWN.z,CROWN.r+2.4,'rgb(96,88,82)');
@@ -1102,6 +1119,36 @@ const water=(function(){ // lake: normal-mapped water disc
   const m=new T.MeshPhongMaterial({color:new T.Color(0x2b6f93).convertSRGBToLinear(),specular:new T.Color(0x9fb8c8),shininess:140,normalMap:nt,
     normalScale:new T.Vector2(0.45,0.45),transparent:true,opacity:0.85,depthWrite:false});
   const w=new T.Mesh(g,m);w.position.set(LAKE.x,WATER_Y,LAKE.z);w.receiveShadow=true;w.renderOrder=2;scene.add(w);return {nt};
+})();
+(function(){ // Aeloria's islands, sky-bridges, drifting clouds and the spire beacon
+  const K=KING,mat=new T.MeshLambertMaterial({vertexColors:true}),cry=new T.MeshLambertMaterial({color:new T.Color(0x9ad8ff).convertSRGBToLinear(),emissive:new T.Color(0x3a7ab4)});
+  const isle=(cx,cz,R,D,colf)=>{const NR=22,NS=96,pos=[],col=[],idx=[],put=(x,y,z,c)=>{pos.push(x,y,z);col.push(c[0],c[1],c[2]);return pos.length/3-1;};
+    const c0=put(cx,kingH(cx,cz),cz,colf(cx,cz,0));const ring=[];
+    for(let r=1;r<=NR;r++){const rr2=R*r/NR*(r===NR?0.995:1),row=[];for(let s=0;s<NS;s++){const a=s/NS*6.283,x=cx+Math.cos(a)*rr2,z=cz+Math.sin(a)*rr2;row.push(put(x,kingH(x,z)-(r===NR?0.15:0),z,colf(x,z,r/NR)));}ring.push(row);}
+    for(let s=0;s<NS;s++){const s1=(s+1)%NS;idx.push(c0,ring[0][s1],ring[0][s]);}
+    for(let r=0;r<NR-1;r++)for(let s=0;s<NS;s++){const s1=(s+1)%NS,a=ring[r][s],b=ring[r][s1],c=ring[r+1][s],d=ring[r+1][s1];idx.push(a,b,c,b,d,c);}
+    // rocky underside hanging below the rim
+    const LV=9,und=[ring[NR-1]];for(let l=1;l<=LV;l++){const k=l/LV,row=[];for(let s=0;s<NS;s++){const a=s/NS*6.283,n=vnoise(Math.cos(a)*3+cx*0.1,Math.sin(a)*3+l*0.7),rr2=R*(1-Math.pow(k,0.8))*(0.86+n*0.28),x=cx+Math.cos(a)*rr2,z=cz+Math.sin(a)*rr2,y=kingH(cx,cz)-0.6-D*k*(0.85+n*0.3);
+        const t=0.45+n*0.35;row.push(put(x,y,z,l<2?[0.34*t+0.06,0.26*t+0.05,0.18*t+0.04]:[0.56*t,0.55*t,0.56*t]));}und.push(row);}
+    for(let l=0;l<LV;l++)for(let s=0;s<NS;s++){const s1=(s+1)%NS,a=und[l][s],b=und[l][s1],c=und[l+1][s],d=und[l+1][s1];idx.push(a,c,b,b,c,d);}
+    const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
+    const m=new T.Mesh(g,mat);m.castShadow=true;m.receiveShadow=true;scene.add(m);
+    for(let i=0;i<Math.round(R/4);i++){const a=i*2.4,d=R*(0.2+0.5*((i*7)%5)/5),c=new T.Mesh(new T.OctahedronGeometry(fr(0.6,1.4),0),cry);c.scale.y=2.4;c.position.set(cx+Math.cos(a)*d,kingH(cx,cz)-D*fr(0.35,0.75),cz+Math.sin(a)*d);c.rotation.z=Math.PI+fr(-0.3,0.3);scene.add(c);}
+    for(let i=0;i<3;i++)pendingFx.push({x:cx+fr(-R,R)*0.4,y:kingH(cx,cz)-D*0.6,z:cz+fr(-R,R)*0.4,r:R*0.35,until:Infinity,rate:4,acc:0,type:3,sy:0.5,persist:true});};
+  const grass=(x,z,n)=>{const v=vnoise(x*0.2,z*0.2);return [0.16+v*0.05,0.36+v*0.1,0.12];};
+  isle(K.x,K.z,K.r,46,(x,z,k)=>{if(k>0.97)return [0.42,0.38,0.32];const dc=Math.hypot(x-K.cx,z-K.cz),dp=Math.hypot(x-K.px,z-K.pz),path=segDist(x,z,[K.px,K.pz,K.cx,K.cz])<1.6;
+    return dc<23?[0.72,0.71,0.68]:dp<10?[0.64,0.62,0.57]:path?[0.58,0.55,0.48]:grass(x,z);});
+  for(const s of K.sats)isle(s.x,s.z,s.r,22,(x,z,k)=>k>0.95?[0.42,0.38,0.32]:grass(x,z));
+  // sky-bridges: plank decks with rails
+  const plank=new T.MeshLambertMaterial({color:new T.Color(0x8a6a44).convertSRGBToLinear()}),rail=new T.MeshLambertMaterial({color:new T.Color(0xd8b060).convertSRGBToLinear()});
+  for(const b of K.bridges){const A=new T.Vector3(b.ax,b.ay+0.35-0.18,b.az),B=new T.Vector3(b.bx,b.by+0.35-0.18,b.bz),dir=B.clone().sub(A),L=dir.length();dir.normalize();
+    const q=new T.Quaternion().setFromUnitVectors(new T.Vector3(1,0,0),dir),side=new T.Vector3(-dir.z,0,dir.x).normalize();
+    const deck=new T.Mesh(new T.BoxGeometry(L+6,0.36,3.2),plank);deck.position.copy(A).add(B).multiplyScalar(0.5);deck.quaternion.copy(q);deck.castShadow=deck.receiveShadow=true;scene.add(deck);
+    for(const sd of[-1,1]){const r=new T.Mesh(new T.BoxGeometry(L+6,0.1,0.1),rail);r.position.copy(deck.position).addScaledVector(side,sd*1.5).add(new T.Vector3(0,1.0,0));r.quaternion.copy(q);scene.add(r);
+      for(let t=0;t<=L;t+=4){const p=new T.Mesh(new T.BoxGeometry(0.12,1.0,0.12),rail);p.position.copy(A).addScaledVector(dir,t).addScaledVector(side,sd*1.5).add(new T.Vector3(0,0.6,0));scene.add(p);}}}
+  // clouds drifting under the kingdom
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');for(let i=0;i<14;i++){const cx=64+rr(-28,28),cy=64+rr(-18,18),r=rr(16,30),gg=x.createRadialGradient(cx,cy,0,cx,cy,r);gg.addColorStop(0,'rgba(255,255,255,0.5)');gg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=gg;x.fillRect(0,0,128,128);}
+  const ct=new T.CanvasTexture(c);for(let i=0;i<18;i++){const s=new T.Sprite(new T.SpriteMaterial({map:ct,transparent:true,depthWrite:false,opacity:rr(0.55,0.85)}));const a=rnd()*6.283,d=rr(20,150);s.position.set(K.x+Math.cos(a)*d,K.y-rr(18,40),K.z+Math.sin(a)*d*0.8);const w=rr(40,80);s.scale.set(w,w*0.4,1);scene.add(s);}
 })();
 (function(){ // swamp water: one murky sheet; dry ground pokes through it as islands
   const g=new T.CircleGeometry(235,64);g.rotateX(-Math.PI/2);
@@ -1461,7 +1508,7 @@ const mill={sails:null,spin:0.55,boost:0};
 })();
 
 /* ───────────────────────── destructible pieces: data, grid, physics ───────────────────────── */
-const MAXP=14000, CELL=1.5, GRAV=17;
+const MAXP=16000, CELL=1.5, GRAV=17;
 const S_INTACT=0,S_AWAKE=1,S_RUBBLE=2,S_GONE=3,S_HELD=4;
 const pp=new Float32Array(MAXP*3),pv=new Float32Array(MAXP*3),pq=new Float32Array(MAXP*4),pw=new Float32Array(MAXP*3),ph=new Float32Array(MAXP*3),
   pcol=new Float32Array(MAXP*3),prad=new Float32Array(MAXP),pbound=new Float32Array(MAXP),prest=new Float32Array(MAXP),page=new Float32Array(MAXP),
@@ -1982,6 +2029,23 @@ function ringTower(x,z,y0,R,n,courses,bh,colf){
     addPiece(x+Math.cos(am)*R,y0+bh*(k+0.5),z+Math.sin(am)*R,Math.PI*R/n*0.97,bh/2,0.3,qYaw(Math.atan2(-Math.cos(am),-Math.sin(am))),colf());}
 }
 /* ── the outer ring: camps of the Skyreach, the Caldera, the Coral Coast and the Fungal Deep ── */
+/* Aeloria's castle and town, built from blocks like everything else (and just as smashable) */
+function buildKingdom(){
+  const K=KING,white=()=>{const t=rr(0.9,1.04);return [0.84*t,0.83*t,0.8*t];},blue=()=>{const t=rr(0.85,1.1);return [0.14*t,0.28*t,0.64*t];},gold=()=>{const t=rr(0.9,1.05);return [0.86*t,0.62*t,0.18*t];},trim=()=>rnd()<0.12?gold():white();
+  const cy=kingH(K.cx,K.cz),S=13,c=[[-S,-S],[S,-S],[S,S],[-S,S]];
+  for(let i=0;i<4;i++){const a=c[i],b=c[(i+1)%4],tx=K.cx+a[0],tz=K.cz+a[1];wallSeg(tx,tz,K.cx+b[0],K.cz+b[1],cy,5,1.4,0.7,0.7,trim,i===2?[[S-2.6,S+2.6]]:[]);
+    ringTower(tx,tz,cy,2.2,10,12,0.7,white);const top=cy+12*0.7;
+    for(let k=0;k<5;k++){const an=k/5*6.283;addPiece(tx+Math.cos(an)*2.2,top+0.3,tz+Math.sin(an)*2.2,0.32,0.3,0.32,qYaw(-an),gold());}
+    addPiece(tx,top+1.6,tz,0.05,1.6,0.05,qYaw(0),[0.3,0.24,0.16]);addPiece(tx+0.55,top+2.6,tz,0.5,0.4,0.02,qYaw(0),blue());}
+  ringTower(K.cx,K.cz-3,cy,4.2,14,16,0.7,white);for(let k=0;k<10;k++){const an=k/10*6.283;addPiece(K.cx+Math.cos(an)*4.2,cy+16*0.7+0.3,K.cz-3+Math.sin(an)*4.2,0.42,0.3,0.42,qYaw(-an),k%2?gold():blue());}
+  ringTower(K.cx,K.cz-3,cy,1.6,7,34,0.7,(()=>{let n=0;return ()=>(n++%7===0)?gold():white();})());
+  addPiece(K.cx,cy+34*0.7+0.6,K.cz-3,0.6,0.6,0.6,qYaw(0.785),gold());KING.beaconY=cy+34*0.7+1.4;
+  for(const sx of[-1,1]){const x=K.cx+sx*4.2,z=K.cz+S+2.5;for(let k=0;k<4;k++)addPiece(x,cy+0.45+k*0.9,z,0.45,0.45,0.45,qYaw(0),white());addPiece(x,cy+4.0,z,0.5,0.3,0.5,qYaw(0.785),gold());}
+  const py=kingH(K.px,K.pz);buildWellAt(K.px,K.pz,py);
+  for(let i=0;i<6;i++){const a=Math.PI/2+(i-2.5)*0.6,R=15.5,hx=K.px+Math.cos(a)*R,hz=K.pz+Math.sin(a)*R;buildHouse(hx,hz,Math.atan2(-Math.cos(a),-Math.sin(a)),rr(4.6,5.6),rr(4,4.6),kingH(hx,hz),white,blue);}
+  const cols=[[0.2,0.35,0.7],[0.75,0.6,0.15]];for(let i=0;i<2;i++){const a=i?0.15:Math.PI-0.15,x=K.px+Math.cos(a)*7,z=K.pz+Math.sin(a)*7;buildStall(x,z,py,Math.atan2(-Math.cos(a),-Math.sin(a)),cols[i]);}
+  for(let t=0.2;t<0.95;t+=0.25){for(const sd of[-1,1]){const x=lerp(K.px,K.cx,t)+sd*2.6,z=lerp(K.pz,K.cz,t);const y=kingH(x,z);addPiece(x,y+1.1,z,0.08,1.1,0.08,qYaw(0),[0.3,0.26,0.2]);addPiece(x,y+2.3,z,0.18,0.14,0.18,qYaw(0),gold());}}
+}
 const OUTER_KINDS=['aerie','roost','ruins','citadel','pits','cshrine','wreck','shoals','grotto','myco','warren','webs','pond','oakgrove','dunes','burrows','belfry'];
 const _qa=new T.Vector3(),_qb=new T.Vector3();
 function qAlong(dx,dy,dz){_qa.set(dx,dy,dz);if(Math.abs(dx)+Math.abs(dz)<1e-4)_qb.set(0,0,1);else _qb.set(-dz,0,dx);return qBasis(_qa,_qb);}
@@ -2194,8 +2258,8 @@ function buildArena(){
   addPiece(CROWN.x,y0+2.8,tz+1.6,1.0,1.3,0.3,qYaw(0),dk());
   addPiece(CROWN.x,y0+4.3,tz+1.6,0.5,0.2,0.32,qYaw(0),[0.7,0.5,0.15]);
 }
-buildTower(TOWER.x,TOWER.z);buildCottage();buildGarden();buildWell();buildRuins(RUIN.x,RUIN.z);buildFarm();buildStones();for(const v of VILLAGES)buildVillage(v);for(const c of CAMPS)buildCamp(c);buildLighthouse();buildArena();
-finalizePieces();
+buildTower(TOWER.x,TOWER.z);buildCottage();buildGarden();buildWell();buildRuins(RUIN.x,RUIN.z);buildFarm();buildStones();for(const v of VILLAGES)if(!v.sky)buildVillage(v);SKYCTX=true;buildKingdom();for(const c of CAMPS)buildCamp(c);buildLighthouse();buildArena();
+finalizePieces();SKYCTX=false;
 (function(){
   const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
   x.fillStyle='#e8e6e2';x.fillRect(0,0,128,128);
@@ -2615,6 +2679,7 @@ let orb,orbGlow,orbLight,castT=1;
   const cuff=new T.Mesh(new T.TorusGeometry(0.058,0.008,6,16),gold);cuff.position.set(0.035,0.035,0.075);cuff.rotation.set(0.6,0,0.42);staff.add(cuff);
 })();
 const glowTex=window.__glowTex;delete window.__glowTex;
+const KBEACON=(()=>{const s=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xfff0b0,blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,fog:false}));s.scale.set(16,16,1);s.position.set(KING.cx,KING.beaconY||KING.y+30,KING.cz-3);s.renderOrder=12;scene.add(s);return s;})();
 /* landmarks of the outer ring: the lighthouse beam and the smoking mountain */
 const LM={smoke:[],base:0,glow:null};
 (function(){
@@ -2632,7 +2697,7 @@ const LM={smoke:[],base:0,glow:null};
   for(let i=0;i<16;i++){const s=new T.Sprite(new T.SpriteMaterial({map:tex,color:new T.Color(0x57504e),transparent:true,depthWrite:false,opacity:0,fog:false}));s.renderOrder=3;s.material.rotation=i*0.9;scene.add(s);LM.smoke.push({s,t:i/16,w:rr(0.8,1.2)});}
   const g2=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xff5a1a,blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,opacity:0.7,fog:false}));g2.scale.set(80,34,1);g2.position.set(VOLC.x,LM.base+6,VOLC.z);g2.renderOrder=3;scene.add(g2);LM.glow=g2;
 })();
-function updateLandmarks(dt){
+function updateLandmarks(dt){KBEACON.material.opacity=(0.55+Math.sin(time*1.8)*0.25)*(SKYCTX?0.35:1);
   if(LIGHTH.beam){const on=pstate[LIGHTH.top]===S_INTACT;LIGHTH.beam.visible=LIGHTH.glow.visible=on;if(on){LIGHTH.beam.rotation.y+=dt*0.7;LIGHTH.glow.material.opacity=0.7+Math.sin(time*2)*0.1;}}
   const d=Math.hypot(camera.position.x-VOLC.x,camera.position.z-VOLC.z),far=0.4+0.6*(1-smooth(400,2200,d));
   for(const o of LM.smoke){o.t+=dt*0.03;if(o.t>1)o.t-=1;const k=o.t,s=o.s;s.position.set(VOLC.x+Math.sin(k*5+o.w*3)*k*22+k*70,LM.base+8+k*150,VOLC.z+Math.cos(k*3+o.w)*k*16);
@@ -2820,7 +2885,7 @@ function updateStaff(dt){
 
 /* ───────────────────────── the flying broom ───────────────────────── */
 const BROOM={on:false,bank:0,told:false,lastWarn:-99,speed:0,leafT:0};
-const BROOM_CEIL=150;
+const BROOM_CEIL=195;
 let jumpHeld=false,windNode=null,baseFov=65,camKick=0;
 const broomRig=new T.Group();broomRig.rotation.order='YXZ';broomRig.visible=false;staffScene.add(broomRig);
 let broomGem=null,broomGlow=null;
@@ -4852,7 +4917,7 @@ function die(){
 }
 function tryRespawn(){if(player.dead&&time-player.deadAt>1.2)respawn();}
 function respawn(){
-  let sp=[START.x,START.z],bd=Math.hypot(player.x-START.x,player.z-START.z);for(const v of VILLAGES){const d=Math.hypot(player.x-v.x,player.z-v.z);if(d<bd){bd=d;sp=[v.x+3,v.z+3];}}
+  let sp=[START.x,START.z],bd=Math.hypot(player.x-START.x,player.z-START.z);for(const v of VILLAGES){if(v.sky)continue;const d=Math.hypot(player.x-v.x,player.z-v.z);if(d<bd){bd=d;sp=[v.x+3,v.z+3];}}
   player.dead=false;player.hp=player.max;player.x=sp[0];player.z=sp[1];player.feet=groundH(sp[0],sp[1]);player.vx=player.vz=player.vy=0;player.yaw=0.06;player.pitch=-0.02;
   $('death').hidden=true;hurtV=0;hurtEl.style.opacity='0';
   for(const e of enemies)if(e.state!=='dead'&&e.type!=='boss'&&Math.hypot(e.x-sp[0],e.z-sp[1])<35)killEnemy(e,true);
@@ -4972,6 +5037,7 @@ for(const c of CAMPS.concat(ROAMERS)){c.remaining=c.crew.slice();c.spawned=false
 function campAlive(c){let n=0;for(const e of enemies)if(e.camp===c&&e.state!=='dead'&&!e.despawn)n++;return n;}
 function updateCamps(){
   for(const c of CAMPS.concat(ROAMERS)){
+    if(c.sky&&!SKYCTX)continue;
     const d=Math.hypot(player.x-c.x,player.z-c.z);
     if(c.name&&!c.discovered&&d<42){c.discovered=true;const cl=campLv(c);toast(c.name+' · Lv '+cl+(cl-SKILL.level>=3?' · too strong for you':''));}
     if(!COMBAT.on)continue;
@@ -4993,7 +5059,7 @@ function updateCamps(){
   if(COMBAT.on&&!COMBAT.bossDown&&!BOSS.e&&bd<120){BOSS.e=spawnEnemy('boss',CROWN.x,CROWN.z+4,{home:{x:CROWN.x,z:CROWN.z,r:CROWN.r}});BOSS.e.yaw=Math.PI;BOSS.reset();}
   else if(BOSS.e&&!BOSS.engaged&&bd>160){BOSS.e.despawn=true;BOSS.e=null;}
   if(!CROWN.discovered&&bd<60){CROWN.discovered=true;toast('Crown Hollow');}
-  for(const v of VILLAGES)if(!v.discovered&&Math.hypot(player.x-v.x,player.z-v.z)<34){v.discovered=true;toast(v.name+' · the well restores health');}
+  for(const v of VILLAGES)if(!v.discovered&&(!v.sky||SKYCTX)&&Math.hypot(player.x-v.x,player.z-v.z)<34){v.discovered=true;toast(v.name+' · the well restores health');}
 }
 function nearPiece(x,z){let hit=false;forNeighbors(x,groundH(x,z)+0.6,z,j=>{if(hit||pstate[j]>=S_GONE)return;if(Math.hypot(pp[j*3]-x,pp[j*3+2]-z)<pbound[j]+0.7)hit=true;});return hit;}
 /* boss state */
@@ -5094,6 +5160,7 @@ function updateEnemies(dt){
     if(e.despawn){removeEnemy(k);continue;}
     if(e.state==='dead'){e.t+=dt;e.m.g.scale.setScalar(Math.max(0.001,1-e.t/0.3)*(e.m.scale||1));if(e.t>0.3)removeEnemy(k);continue;}
     if(e.type==='boss'){updateBoss(e,dt);continue;}
+    if(e.camp&&e.camp.sky&&!SKYCTX){e.m.g.visible=false;e.bar.bg.visible=e.bar.fill.visible=false;if(e.badge)e.badge.visible=false;continue;}
     const dx=player.x-e.x,dz=player.z-e.z,dist=Math.hypot(dx,dz)+1e-6;
     if(!e.aggro&&dist>110){e.m.g.visible=false;e.bar.bg.visible=e.bar.fill.visible=false;continue;}
     e.m.g.visible=true;
@@ -5171,7 +5238,7 @@ function updateEnemies(dt){
   }
   updateRoots(dt);updateShots(dt);debrisHits();updateVillagers(dt);
   if(!player.dead){
-    let well=false;for(const v of VILLAGES)if(v.fear<time&&Math.hypot(player.x-v.x,player.z-v.z)<5)well=true;
+    let well=false;for(const v of VILLAGES)if(v.fear<time&&(!v.sky||SKYCTX)&&Math.hypot(player.x-v.x,player.z-v.z)<5)well=true;
     if(well&&player.hp<player.max){player.hp=Math.min(player.max,player.hp+18*dt);if(Math.random()<0.4)PA.spawn(player.x+fr(-0.6,0.6),player.feet+fr(0.2,1.6),player.z+fr(-0.6,0.6),0,fr(0.6,1.4),0,fr(0.6,1.1),0.14,0.03,0.5,1,0.5,0.9,0.4,0.9,0.6,0,0);}
     else if(time-player.lastHurt>5&&player.hp<player.max)player.hp=Math.min(player.max,player.hp+8*dt);
   }
@@ -5201,6 +5268,7 @@ function updateVillagers(dt){
   for(const o of VILLAGERS){
     const pdist=Math.abs(o.x-player.x)+Math.abs(o.z-player.z);
     if(o.dead)continue;
+    if(o.v&&o.v.sky&&!SKYCTX){o.m.g.visible=false;continue;}
     if(pdist>150){o.m.g.visible=false;continue;}o.m.g.visible=true;
     if(time-lastBoom.t<0.2&&Math.hypot(lastBoom.x-o.x,lastBoom.z-o.z)<24){o.flee=4;o.fx=o.x-lastBoom.x;o.fz=o.z-lastBoom.z;}
     for(const e of enemies){if(e.state==='dead'||!e.aggro)continue;const d=Math.hypot(e.x-o.x,e.z-o.z);if(d<16){o.flee=Math.max(o.flee,2);o.fx=o.x-e.x;o.fz=o.z-e.z;break;}}
@@ -5390,6 +5458,8 @@ const QUESTS={
   wreck:{name:'The Sunken Wreck',minLevel:13,desc:'Clear the wreck beached east of Saltmere Light.',goal:{type:'camp',what:'Sunken Wreck'},reward:{xp:2200,gold:420,items:{tome:1,rfrost:1,heart:1}}},
   spores:{name:'Spore Season',minLevel:10,desc:'Bring Elder Mossa 6 Spore Sacs from the Shroomlings of the Fungal Deep.',goal:{type:'item',what:'spore',n:6},reward:{xp:1200,gold:220,items:{bigpotion:1,potion:2}}},
   myco:{name:'Heart of the Mycelium',minLevel:13,desc:'Clear the Mycelium Heart, the great mushroom north-west of Sporewick.',goal:{type:'camp',what:'Mycelium Heart'},reward:{xp:2200,gold:420,items:{tome:1,rpoison:1,heart:1}}},
+  stormrift:{name:'Calm the Storm Rift',minLevel:12,desc:'Storm elementals have torn open a rift on the western isle of Aeloria. Clear the Storm Rift.',goal:{type:'camp',what:'Storm Rift'},reward:{xp:2400,gold:500,items:{tome:1,rstorm:1,heart:1}}},
+  eyrie:{name:'The Griffin Eyrie',minLevel:13,desc:'Wild griffins nest on the eastern isle of Aeloria. Clear the Griffin Eyrie.',goal:{type:'camp',what:'Griffin Eyrie'},reward:{xp:2600,gold:600,items:{tome:2,rwind:1,heart:1}}},
   king:{name:'The Hollow King',minLevel:6,desc:'Defeat the Hollow King in Crown Hollow, to the south.',goal:{type:'boss'},reward:{xp:1000,gold:300}}
 };
 VILLAGES[0].elder='Elder Maren';VILLAGES[0].chain=['village','silk','goblins','quarry','mire','crypt','king'];
@@ -5402,6 +5472,7 @@ VILLAGES[6].elder='Elder Aldric';VILLAGES[6].chain=['village','griffins','aerie'
 VILLAGES[7].elder='Elder Vesna';VILLAGES[7].chain=['village','hounds','citadel'];
 VILLAGES[8].elder='Elder Corin';VILLAGES[8].chain=['village','crabs','wreck'];
 VILLAGES[9].elder='Elder Mossa';VILLAGES[9].chain=['village','spores','myco'];
+VILLAGES[10].elder='Queen Seraphine';VILLAGES[10].chain=['village','stormrift','eyrie'];
 for(const v of VILLAGES)v.fear=0;
 /* icons drawn in code */
 const ICON_CV={},ICON_TX={},ICON_URL={};
@@ -5673,7 +5744,7 @@ VILLAGES.forEach((v,i)=>{const m=buildElder();scene.add(m.g);
   VILLAGERS.push({v,m,elder:true,name:v.elder,x:v.x-Math.cos(v.yaw+Math.PI/5)*3,z:v.z-Math.sin(v.yaw+Math.PI/5)*3,y:0,yaw:0,wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:30,dead:false});});
 /* ── village merchants and the shop ── */
 const SHOP=[{id:'potion',price:()=>25},{id:'bigpotion',price:()=>70},{id:'tome',price:()=>250+100*SKILL.tomesBought},{id:'candle',price:()=>60},{id:'dust',price:()=>8}];
-const VSTOCK=[['sunleaf','moonpetal','rarcane'],['feather','ironore','rwind'],['frostbloom','icecrystal','rfrost'],['sandrose','sunstone','rlight'],['sulfur','ironore','rearth'],['vineheart','orchid','rnature'],['feather','stormglass','rwind'],['fireopal','sulfur','rfire'],['moonpetal','sunstone','rfrost'],['glowcap','gravedust','rpoison']];
+const VSTOCK=[['sunleaf','moonpetal','rarcane'],['feather','ironore','rwind'],['frostbloom','icecrystal','rfrost'],['sandrose','sunstone','rlight'],['sulfur','ironore','rearth'],['vineheart','orchid','rnature'],['feather','stormglass','rwind'],['fireopal','sulfur','rfire'],['moonpetal','sunstone','rfrost'],['glowcap','gravedust','rpoison'],['stormglass','prism','rlight','rstorm','tome']];
 const BUYP={sunleaf:12,moonpetal:16,feather:14,frostbloom:18,icecrystal:20,sandrose:18,sunstone:24,sulfur:16,ironore:18,vineheart:22,orchid:24,stormglass:28,fireopal:24,glowcap:16,gravedust:18};
 function shopList(){const L=SHOP.slice(),vi=shopNPC?VILLAGES.indexOf(shopNPC.v):-1;if(vi>=0&&VSTOCK[vi])for(const id of VSTOCK[vi])L.push({id,price:()=>ITEMS[id].cat===5?320:BUYP[id]||20});return L;}
 const UPGRADES={
@@ -5703,7 +5774,7 @@ function buildMerchant(){
   return {g,limbs,marker};
 }
 VILLAGES.forEach((v,i)=>{const a=v.yaw+Math.PI/5,hx=v.x+Math.cos(a)*6.4,hz=v.z+Math.sin(a)*6.4,m=buildMerchant();scene.add(m.g);
-  VILLAGERS.push({v,m,merchant:true,name:['Merchant Ada','Merchant Bram','Merchant Runa','Merchant Kasim','Merchant Tova','Merchant Iko','Merchant Odo','Merchant Pell','Merchant Wren','Merchant Fia'][i],home:[hx,hz],x:hx,z:hz,y:0,yaw:Math.atan2(-Math.cos(a),-Math.sin(a)),wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:25,dead:false});});
+  VILLAGERS.push({v,m,merchant:true,name:['Merchant Ada','Merchant Bram','Merchant Runa','Merchant Kasim','Merchant Tova','Merchant Iko','Merchant Odo','Merchant Pell','Merchant Wren','Merchant Fia','Merchant Celeste'][i],home:[hx,hz],x:hx,z:hz,y:0,yaw:Math.atan2(-Math.cos(a),-Math.sin(a)),wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:25,dead:false});});
 let shopNPC=null;
 function openShop(o){shopNPC=o;openPanel('shop');}
 function spendGold(n){if(SKILL.gold<n){toast('Not enough gold');SFX.select(1);return false;}SKILL.gold-=n;SFX.buy();return true;}
@@ -6093,6 +6164,8 @@ const NODES=[],NODE_MESH={},CHESTS=[],_M2=new T.Matrix4();let nodeGlow=null,node
   for(const c of CAMPS){const a=rg()*6.283,x=c.x+Math.cos(a)*2.2,z=c.z+Math.sin(a)*2.2;CHESTS.push({chest:true,name:'chest',id:'c'+c.name,x,z,yaw:a,el:CAMP_RUNE[c.name]||'arcane',camp:c,vis:false,opened:false,open:0});}
   for(const [b,n] of[[8,4],[9,4],[10,4],[11,4]])for(let k=0;k<n;k++){const p=biomeSpot(b,rg,3);if(!p)continue;CHESTS.push({chest:true,name:'chest',id:'h'+CHESTS.length,x:p[0],z:p[1],yaw:rg()*6.283,el:BIOME_EL[b],camp:null,vis:true,opened:false,open:0});}
   ISLES.forEach((s,i)=>CHESTS.push({chest:true,name:'chest',id:'i'+i,x:s.x+1.5,z:s.z-1,fy:s.top,yaw:rg()*6.283,el:['wind','storm','light','arcane'][i%4],camp:null,vis:true,opened:false,open:0}));
+  for(const ch of CHESTS)if(ch.camp&&ch.camp.sky)ch.fy=kingH(ch.x,ch.z);
+  [[KING.cx+9,KING.cz-9,'light'],[KING.px+11,KING.pz+9,'storm'],[KING.sats[1].x+7,KING.sats[1].z+6,'wind']].forEach((q,i)=>CHESTS.push({chest:true,name:'chest',id:'k'+i,x:q[0],z:q[1],fy:kingH(q[0],q[1]),yaw:rg()*6.283,el:q[2],camp:null,vis:true,opened:false,open:0}));
   const wood=[0.2,0.09,0.035],band=[0.13,0.12,0.11],gold=[0.9,0.6,0.15];
   const box=(w,h,d,x,y,z,c)=>{const g=new T.BoxGeometry(w,h,d);g.translate(x,y,z);return paint(g,c);};
   const baseG=merge([box(0.9,0.48,0.6,0,0.24,0,wood),box(0.94,0.07,0.64,0,0.06,0,band),box(0.94,0.07,0.64,0,0.44,0,band),box(0.06,0.5,0.62,-0.3,0.25,0,band),box(0.06,0.5,0.62,0.3,0.25,0,band),box(0.12,0.14,0.04,0,0.4,0.31,gold)]);
@@ -6421,7 +6494,7 @@ function frame(now){
   if(mapOpen){if(mapDirty){rebuildMap();mapDirty=false;}drawMap();last=now;return;}
   const raw=(now-last)/1000;last=now;let dt=(homeOpen||paused()||panelOpen||dialogOpen||bookOpen)?0:Math.min(0.05,Math.max(0.001,raw));if(hitStop>0&&dt>0){hitStop-=dt;dt*=0.12;}time+=dt;frameN++;
   cooldown=Math.max(0,cooldown-dt);for(let i=0;i<100;i++)if(CD[i]>0)CD[i]=Math.max(0,CD[i]-dt);if(frameN%3===0)updateCdHud();
-  updatePlayer(dt);
+  updateSkyCtx();updatePlayer(dt);
   acc+=dt;let steps=0;while(acc>=1/60&&steps<3){physStep(1/60);acc-=1/60;steps++;}if(acc>0.1)acc=0;
   for(let k=timers.length-1;k>=0;k--)if(timers[k].t<=time){const f=timers[k].fn;timers.splice(k,1);f();}
   for(let k=effects.length-1;k>=0;k--)if(!effects[k].update(dt))effects.splice(k,1);
