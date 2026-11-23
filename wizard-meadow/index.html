@@ -1120,35 +1120,43 @@ const water=(function(){ // lake: normal-mapped water disc
     normalScale:new T.Vector2(0.45,0.45),transparent:true,opacity:0.85,depthWrite:false});
   const w=new T.Mesh(g,m);w.position.set(LAKE.x,WATER_Y,LAKE.z);w.receiveShadow=true;w.renderOrder=2;scene.add(w);return {nt};
 })();
-(function(){ // Aeloria's islands, sky-bridges, drifting clouds and the spire beacon
-  const K=KING,mat=new T.MeshLambertMaterial({vertexColors:true}),cry=new T.MeshLambertMaterial({color:new T.Color(0x9ad8ff).convertSRGBToLinear(),emissive:new T.Color(0x3a7ab4)});
-  const isle=(cx,cz,R,D,colf)=>{const NR=22,NS=96,pos=[],col=[],idx=[],put=(x,y,z,c)=>{pos.push(x,y,z);col.push(c[0],c[1],c[2]);return pos.length/3-1;};
-    const c0=put(cx,kingH(cx,cz),cz,colf(cx,cz,0));const ring=[];
-    for(let r=1;r<=NR;r++){const rr2=R*r/NR*(r===NR?0.995:1),row=[];for(let s=0;s<NS;s++){const a=s/NS*6.283,x=cx+Math.cos(a)*rr2,z=cz+Math.sin(a)*rr2;row.push(put(x,kingH(x,z)-(r===NR?0.15:0),z,colf(x,z,r/NR)));}ring.push(row);}
+(function(){ // Aeloria rests on clouds: soft white ground, billowing cloud banks beneath, fluffy rims and drifting clouds
+  const K=KING,topM=new T.MeshLambertMaterial({vertexColors:true,emissive:new T.Color(0x182030)}),cloudM=new T.MeshLambertMaterial({vertexColors:true,emissive:new T.Color(0x283246)});
+  const surf=(cx,cz,R,colf)=>{const NR=22,NS=96,pos=[],col=[],idx=[],put=(x,y,z,c)=>{pos.push(x,y,z);col.push(c[0],c[1],c[2]);return pos.length/3-1;};
+    const c0=put(cx,kingH(cx,cz),cz,colf(cx,cz));const ring=[];
+    for(let r=1;r<=NR;r++){const rr2=R*r/NR*(r===NR?0.995:1),row=[];for(let s=0;s<NS;s++){const a=s/NS*6.283,x=cx+Math.cos(a)*rr2,z=cz+Math.sin(a)*rr2;row.push(put(x,kingH(x,z)-(r===NR?0.3:0),z,colf(x,z)));}ring.push(row);}
     for(let s=0;s<NS;s++){const s1=(s+1)%NS;idx.push(c0,ring[0][s1],ring[0][s]);}
     for(let r=0;r<NR-1;r++)for(let s=0;s<NS;s++){const s1=(s+1)%NS,a=ring[r][s],b=ring[r][s1],c=ring[r+1][s],d=ring[r+1][s1];idx.push(a,b,c,b,d,c);}
-    // rocky underside hanging below the rim
-    const LV=9,und=[ring[NR-1]];for(let l=1;l<=LV;l++){const k=l/LV,row=[];for(let s=0;s<NS;s++){const a=s/NS*6.283,n=vnoise(Math.cos(a)*3+cx*0.1,Math.sin(a)*3+l*0.7),rr2=R*(1-Math.pow(k,0.8))*(0.86+n*0.28),x=cx+Math.cos(a)*rr2,z=cz+Math.sin(a)*rr2,y=kingH(cx,cz)-0.6-D*k*(0.85+n*0.3);
-        const t=0.45+n*0.35;row.push(put(x,y,z,l<2?[0.34*t+0.06,0.26*t+0.05,0.18*t+0.04]:[0.56*t,0.55*t,0.56*t]));}und.push(row);}
-    for(let l=0;l<LV;l++)for(let s=0;s<NS;s++){const s1=(s+1)%NS,a=und[l][s],b=und[l][s1],c=und[l+1][s],d=und[l+1][s1];idx.push(a,c,b,b,c,d);}
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setAttribute('color',new T.Float32BufferAttribute(col,3));g.setIndex(idx);g.computeVertexNormals();
-    const m=new T.Mesh(g,mat);m.castShadow=true;m.receiveShadow=true;scene.add(m);
-    for(let i=0;i<Math.round(R/4);i++){const a=i*2.4,d=R*(0.2+0.5*((i*7)%5)/5),c=new T.Mesh(new T.OctahedronGeometry(fr(0.6,1.4),0),cry);c.scale.y=2.4;c.position.set(cx+Math.cos(a)*d,kingH(cx,cz)-D*fr(0.35,0.75),cz+Math.sin(a)*d);c.rotation.z=Math.PI+fr(-0.3,0.3);scene.add(c);}
-    for(let i=0;i<3;i++)pendingFx.push({x:cx+fr(-R,R)*0.4,y:kingH(cx,cz)-D*0.6,z:cz+fr(-R,R)*0.4,r:R*0.35,until:Infinity,rate:4,acc:0,type:3,sy:0.5,persist:true});};
-  const grass=(x,z,n)=>{const v=vnoise(x*0.2,z*0.2);return [0.16+v*0.05,0.36+v*0.1,0.12];};
-  isle(K.x,K.z,K.r,46,(x,z,k)=>{if(k>0.97)return [0.42,0.38,0.32];const dc=Math.hypot(x-K.cx,z-K.cz),dp=Math.hypot(x-K.px,z-K.pz),path=segDist(x,z,[K.px,K.pz,K.cx,K.cz])<1.6;
-    return dc<23?[0.72,0.71,0.68]:dp<10?[0.64,0.62,0.57]:path?[0.58,0.55,0.48]:grass(x,z);});
-  for(const s of K.sats)isle(s.x,s.z,s.r,22,(x,z,k)=>k>0.95?[0.42,0.38,0.32]:grass(x,z));
-  // sky-bridges: plank decks with rails
+    const m=new T.Mesh(g,topM);m.receiveShadow=true;scene.add(m);};
+  const puffs=[];
+  const bank=(cx,cz,R,D)=>{const y0=kingH(cx,cz),nr=Math.round(R*0.85);
+    for(let i=0;i<nr;i++){const a=i/nr*6.283+fr(-0.06,0.06),r=fr(3.2,6.2);puffs.push([cx+Math.cos(a)*(R-r*0.25),y0-1.6-fr(0,1.2),cz+Math.sin(a)*(R-r*0.25),r]);}
+    const n=Math.round(R*1.4);for(let i=0;i<n;i++){const a=rnd()*6.283,d=Math.sqrt(rnd())*R*0.9,k=d/R,r=lerp(R*0.3,R*0.15,k)*fr(0.8,1.2);puffs.push([cx+Math.cos(a)*d,y0-2.5-r*0.45-(1-k)*D*fr(0.25,0.8),cz+Math.sin(a)*d,r]);}
+    for(let i=0;i<Math.round(R*0.3);i++){const a=rnd()*6.283,d=R*fr(0.85,1.15),r=fr(2.5,5);puffs.push([cx+Math.cos(a)*d,y0-fr(5,D*0.5),cz+Math.sin(a)*d,r]);}};
+  const white=(x,z)=>{const v=vnoise(x*0.15,z*0.15);return [0.9+v*0.08,0.92+v*0.07,0.97+v*0.03];};
+  surf(K.x,K.z,K.r,(x,z)=>{const dc=Math.hypot(x-K.cx,z-K.cz),dp=Math.hypot(x-K.px,z-K.pz),path=segDist(x,z,[K.px,K.pz,K.cx,K.cz])<1.6;
+    return dc<23?[0.74,0.73,0.7]:dp<10?[0.66,0.64,0.6]:path?[0.78,0.7,0.5]:white(x,z);});
+  for(const s of K.sats)surf(s.x,s.z,s.r,white);
+  bank(K.x,K.z,K.r,40);for(const s of K.sats)bank(s.x,s.z,s.r,20);
+  // merge every puff into one soft mesh, shaded white on top and blue-grey underneath
+  const base=new T.IcosahedronGeometry(1,2),bp=base.attributes.position,nv=bp.count,pos=new Float32Array(puffs.length*nv*3),nor=new Float32Array(puffs.length*nv*3),col=new Float32Array(puffs.length*nv*3);
+  puffs.forEach((p,j)=>{const sq=0.75+((j*37)%10)/40;for(let i=0;i<nv;i++){const x=bp.getX(i),y=bp.getY(i),z=bp.getZ(i),o=(j*nv+i)*3,w=vnoise(x*2+j,z*2+y)*0.12+0.94;
+    pos[o]=p[0]+x*p[3]*w;pos[o+1]=p[1]+y*p[3]*sq*w;pos[o+2]=p[2]+z*p[3]*w;const l=Math.hypot(x,y/sq,z);nor[o]=x/l;nor[o+1]=y/sq/l;nor[o+2]=z/l;
+    const t=clamp(y*0.5+0.5,0,1);col[o]=lerp(0.6,1,t);col[o+1]=lerp(0.66,1,t);col[o+2]=lerp(0.8,1,t);}});
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(pos,3));g.setAttribute('normal',new T.BufferAttribute(nor,3));g.setAttribute('color',new T.BufferAttribute(col,3));g.computeBoundingSphere();
+  const cm=new T.Mesh(g,cloudM);cm.name='kcloud';cm.castShadow=true;cm.receiveShadow=true;scene.add(cm);
+  for(let i=0;i<4;i++)pendingFx.push({x:K.x+fr(-30,30),y:K.y-8,z:K.z+fr(-30,30),r:20,until:Infinity,rate:4,acc:0,type:3,sy:0.3,persist:true});
+  // sky-bridges: plank decks with golden rails
   const plank=new T.MeshLambertMaterial({color:new T.Color(0x8a6a44).convertSRGBToLinear()}),rail=new T.MeshLambertMaterial({color:new T.Color(0xd8b060).convertSRGBToLinear()});
   for(const b of K.bridges){const A=new T.Vector3(b.ax,b.ay+0.35-0.18,b.az),B=new T.Vector3(b.bx,b.by+0.35-0.18,b.bz),dir=B.clone().sub(A),L=dir.length();dir.normalize();
     const q=new T.Quaternion().setFromUnitVectors(new T.Vector3(1,0,0),dir),side=new T.Vector3(-dir.z,0,dir.x).normalize();
     const deck=new T.Mesh(new T.BoxGeometry(L+6,0.36,3.2),plank);deck.position.copy(A).add(B).multiplyScalar(0.5);deck.quaternion.copy(q);deck.castShadow=deck.receiveShadow=true;scene.add(deck);
     for(const sd of[-1,1]){const r=new T.Mesh(new T.BoxGeometry(L+6,0.1,0.1),rail);r.position.copy(deck.position).addScaledVector(side,sd*1.5).add(new T.Vector3(0,1.0,0));r.quaternion.copy(q);scene.add(r);
       for(let t=0;t<=L;t+=4){const p=new T.Mesh(new T.BoxGeometry(0.12,1.0,0.12),rail);p.position.copy(A).addScaledVector(dir,t).addScaledVector(side,sd*1.5).add(new T.Vector3(0,0.6,0));scene.add(p);}}}
-  // clouds drifting under the kingdom
-  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');for(let i=0;i<14;i++){const cx=64+rr(-28,28),cy=64+rr(-18,18),r=rr(16,30),gg=x.createRadialGradient(cx,cy,0,cx,cy,r);gg.addColorStop(0,'rgba(255,255,255,0.5)');gg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=gg;x.fillRect(0,0,128,128);}
-  const ct=new T.CanvasTexture(c);for(let i=0;i<18;i++){const s=new T.Sprite(new T.SpriteMaterial({map:ct,transparent:true,depthWrite:false,opacity:rr(0.55,0.85)}));const a=rnd()*6.283,d=rr(20,150);s.position.set(K.x+Math.cos(a)*d,K.y-rr(18,40),K.z+Math.sin(a)*d*0.8);const w=rr(40,80);s.scale.set(w,w*0.4,1);scene.add(s);}
+  // drifting cloud sprites all around
+  const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');for(let i=0;i<14;i++){const cx=64+rr(-28,28),cy=64+rr(-18,18),r=rr(16,30),gg=x.createRadialGradient(cx,cy,0,cx,cy,r);gg.addColorStop(0,'rgba(255,255,255,0.55)');gg.addColorStop(1,'rgba(255,255,255,0)');x.fillStyle=gg;x.fillRect(0,0,128,128);}
+  const ct=new T.CanvasTexture(c);for(let i=0;i<34;i++){const s=new T.Sprite(new T.SpriteMaterial({map:ct,transparent:true,depthWrite:false,opacity:rr(0.6,0.9)}));const a=rnd()*6.283,d=rr(30,170);s.position.set(K.x+Math.cos(a)*d,K.y-rr(-4,40),K.z+Math.sin(a)*d*0.8);const w=rr(30,80);s.scale.set(w,w*0.42,1);scene.add(s);}
 })();
 (function(){ // swamp water: one murky sheet; dry ground pokes through it as islands
   const g=new T.CircleGeometry(235,64);g.rotateX(-Math.PI/2);
@@ -1508,7 +1516,7 @@ const mill={sails:null,spin:0.55,boost:0};
 })();
 
 /* ───────────────────────── destructible pieces: data, grid, physics ───────────────────────── */
-const MAXP=16000, CELL=1.5, GRAV=17;
+const MAXP=18000, CELL=1.5, GRAV=17;
 const S_INTACT=0,S_AWAKE=1,S_RUBBLE=2,S_GONE=3,S_HELD=4;
 const pp=new Float32Array(MAXP*3),pv=new Float32Array(MAXP*3),pq=new Float32Array(MAXP*4),pw=new Float32Array(MAXP*3),ph=new Float32Array(MAXP*3),
   pcol=new Float32Array(MAXP*3),prad=new Float32Array(MAXP),pbound=new Float32Array(MAXP),prest=new Float32Array(MAXP),page=new Float32Array(MAXP),
@@ -1960,23 +1968,122 @@ function buildStall(x,z,y0,yaw,col){
   put(0,0.45,0.45,0.9,0.4,0.05,qA,wood());
   for(let i=0;i<3;i++)put(-0.6+i*0.6,1.05,0.45,0.13,0.1,0.13,qYaw(yaw+i),[[0.7,0.15,0.1],[0.85,0.6,0.1],[0.3,0.55,0.15]][i]);
 }
-function buildVillage(v){
-  const y0=groundH(v.x,v.z);let walls=[stone,()=>{const t=rr(0.85,1.05);return [0.66*t,0.6*t,0.5*t];},mossy],roofs=[roofRed,slate,()=>{const t=rr(0.85,1.1);return [0.5*t,0.36*t,0.12*t];}];
-  if(v.style==='snow'){walls=[stone,()=>{const t=rr(0.8,1.1);return [0.3*t,0.2*t,0.12*t];},stone];roofs=[()=>{const t=rr(0.9,1.05);return [0.9*t,0.92*t,0.96*t];}];}
-  if(v.style==='canyon'){walls=[()=>{const t=rr(0.88,1.06);return [0.7*t,0.38*t,0.24*t];},()=>{const t=rr(0.9,1.05);return [0.78*t,0.5*t,0.32*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.42*t,0.22*t,0.14*t];}];}
-  if(v.style==='jungle'){walls=[()=>{const t=rr(0.85,1.1);return [0.36*t,0.24*t,0.12*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.36*t,0.42*t,0.16*t];},()=>{const t=rr(0.85,1.1);return [0.5*t,0.44*t,0.22*t];}];}
-  if(v.style==='sky'){walls=[()=>{const t=rr(0.9,1.05);return [0.8*t,0.8*t,0.78*t];},stone];roofs=[()=>{const t=rr(0.85,1.1);return [0.16*t,0.3*t,0.56*t];},()=>{const t=rr(0.85,1.1);return [0.24*t,0.42*t,0.62*t];}];}
-  if(v.style==='ash'){walls=[()=>{const t=rr(0.8,1.15);return [0.17*t,0.15*t,0.16*t];},()=>{const t=rr(0.8,1.1);return [0.3*t,0.24*t,0.22*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.52*t,0.16*t,0.07*t];}];}
-  if(v.style==='coast'){walls=[()=>{const t=rr(0.92,1.04);return [0.88*t,0.86*t,0.8*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.1*t,0.44*t,0.5*t];},()=>{const t=rr(0.85,1.1);return [0.68*t,0.34*t,0.22*t];}];}
-  if(v.style==='fungal'){walls=[()=>{const t=rr(0.85,1.05);return [0.78*t,0.72*t,0.62*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.5*t,0.16*t,0.42*t];},()=>{const t=rr(0.85,1.1);return [0.22*t,0.24*t,0.58*t];}];}
-  if(v.style==='desert'){walls=[()=>{const t=rr(0.88,1.05);return [0.8*t,0.68*t,0.48*t];}];roofs=[()=>{const t=rr(0.85,1.1);return [0.62*t,0.3*t,0.16*t];},()=>{const t=rr(0.85,1.1);return [0.74*t,0.62*t,0.42*t];}];}
-  for(let i=0;i<5;i++){const a=v.yaw+i/5*Math.PI*2+rr(-0.15,0.15),R=rr(13,16),hx=v.x+Math.cos(a)*R,hz=v.z+Math.sin(a)*R;
-    buildHouse(hx,hz,Math.atan2(-Math.cos(a),-Math.sin(a)),rr(4.6,5.8),rr(4,4.6),y0,walls[i%walls.length],roofs[(i+1)%roofs.length]);}
-  buildWellAt(v.x,v.z,y0);
-  const cols=[[0.7,0.15,0.12],[0.15,0.35,0.6],[0.75,0.6,0.15]];
-  for(let i=0;i<2;i++){const a=v.yaw+Math.PI/5+i*Math.PI,R=6;buildStall(v.x+Math.cos(a)*R,v.z+Math.sin(a)*R,y0,Math.atan2(-Math.cos(a),-Math.sin(a)),cols[i]);}
-  for(let i=0;i<4;i++){const a=rnd()*6.28,R=rr(3,7);addPiece(v.x+Math.cos(a)*R,y0+0.3,v.z+Math.sin(a)*R,0.3,0.3,0.3,qYaw(rnd()*6),wood());}
+/* every village has its own shape: a market town, a farm, a walled hold, an oasis, terraces, stilts, windmills, a forge town, a boatyard and mushroom houses */
+const VMILLS=[];
+const VC={
+  timber:()=>{const t=rr(0.85,1.05);return [0.66*t,0.6*t,0.5*t];},white:()=>{const t=rr(0.9,1.04);return [0.86*t,0.85*t,0.8*t];},adobe:()=>{const t=rr(0.88,1.05);return [0.8*t,0.66*t,0.46*t];},
+  red:()=>{const t=rr(0.85,1.05);return [0.58*t,0.16*t,0.1*t];},dark:()=>{const t=rr(0.8,1.15);return [0.17*t,0.15*t,0.16*t];},log:()=>{const t=rr(0.8,1.1);return [0.36*t,0.22*t,0.12*t];},
+  canyon:()=>{const t=rr(0.88,1.06);return [0.7*t,0.38*t,0.24*t];},hay:()=>{const t=rr(0.9,1.05);return [0.86*t,0.7*t,0.3*t];},gold:()=>[0.86,0.62,0.18],
+  stem:()=>{const t=rr(0.9,1.04);return [0.86*t,0.82*t,0.74*t];},thatch:()=>{const t=rr(0.85,1.1);return [0.56*t,0.44*t,0.2*t];},leaf:()=>{const t=rr(0.85,1.1);return [0.18*t,0.44*t,0.14*t];},
+  blue:()=>{const t=rr(0.85,1.1);return [0.16*t,0.3*t,0.58*t];},teal:()=>{const t=rr(0.85,1.1);return [0.1*t,0.44*t,0.5*t];},slateR:()=>{const t=rr(0.85,1.1);return [0.42*t,0.14*t,0.08*t];}
+};
+function vPos(v,a,R){return [v.x+Math.cos(a)*R,v.z+Math.sin(a)*R];}
+function vFace(a){return Math.atan2(-Math.cos(a),-Math.sin(a));}
+function vBeam(x0,y0,z0,x1,y1,z1,t,colf,st){const dx=x1-x0,dy=y1-y0,dz=z1-z0,L=Math.hypot(dx,dy,dz);return addPiece((x0+x1)/2,(y0+y1)/2,(z0+z1)/2,L/2,t,t,qAlong(dx,dy,dz),colf(),st);}
+function flatHouse(x,z,yaw,W,D,y0,wall,roofc,floors){
+  const c=Math.cos(yaw),s=Math.sin(yaw),P=(lx,lz)=>[x+lx*c+lz*s,z-lx*s+lz*c];
+  for(let f=0;f<floors;f++){const by=y0+f*2.6,cn=[P(-W/2,-D/2),P(W/2,-D/2),P(W/2,D/2),P(-W/2,D/2)];
+    for(let i=0;i<4;i++){const a=cn[i],b=cn[(i+1)%4],len=Math.hypot(b[0]-a[0],b[1]-a[1]);wallSeg(a[0],a[1],b[0],b[1],by,4,1.3,0.6,0.34,wall,f===0&&i===2?[[len/2-0.6,len/2+0.6]]:i===0||i===1?[[len/2-0.45,len/2+0.45]]:[]);}
+    const nx=Math.max(2,Math.round(W/1.3)),nz=Math.max(2,Math.round(D/1.3));
+    for(let i=0;i<nx;i++)for(let j=0;j<nz;j++){const p=P(-W/2+(i+0.5)*W/nx,-D/2+(j+0.5)*D/nz);addPiece(p[0],by+2.5,p[1],W/nx/2*0.99,0.1,D/nz/2*0.99,qYaw(yaw),roofc());}}
+  const ty=y0+floors*2.6-0.1;for(let i=0;i<4;i++){const cn=[P(-W/2,-D/2),P(W/2,-D/2),P(W/2,D/2),P(-W/2,D/2)],a=cn[i],b=cn[(i+1)%4];wallSeg(a[0],a[1],b[0],b[1],ty,1,1.3,0.4,0.3,wall,[]);}
 }
+function stiltHouse(x,z,yaw,W,D,y0,h,wall,roof){
+  const c=Math.cos(yaw),s=Math.sin(yaw),P=(lx,lz)=>[x+lx*c+lz*s,z-lx*s+lz*c];
+  for(const lx of[-W/2,0,W/2])for(const lz of[-D/2,D/2]){const p=P(lx,lz);addPiece(p[0],y0+h/2,p[1],0.13,h/2,0.13,qYaw(yaw),VC.log());}
+  const n=Math.round((W+1.2)/1.1);for(let i=0;i<n;i++){const p=P(-(W+1.2)/2+(i+0.5)*(W+1.2)/n,0.6);addPiece(p[0],y0+h+0.06,p[1],(W+1.2)/n/2*0.98,0.06,(D+2.4)/2,qYaw(yaw),VC.log());}
+  buildHouse(x,z,yaw,W,D,y0+h+0.12,wall,roof);
+  const f=P(0.9,D/2+1.0),g=P(0.9,D/2+2.6);vBeam(g[0],y0,g[1],f[0],y0+h,f[1],0.08,VC.log);
+}
+function mushHouse(x,z,R,courses,y0,capf){
+  ringTower(x,z,y0,R,8,courses,0.6,VC.stem);const top=y0+courses*0.6+0.15,CR=R*2.3,n=12;
+  addPiece(x,top+0.05,z,R*1.1,0.16,R*1.1,qYaw(0.3),capf());
+  for(let i=0;i<n;i++){const a=i/n*6.283;addPiece(x+Math.cos(a)*CR*0.55,top-0.05,z+Math.sin(a)*CR*0.55,CR*0.45,0.15,Math.PI*CR/n*1.05,qYaw(-a),capf());}
+  for(let i=0;i<n;i++){const a=(i+0.5)/n*6.283;addPiece(x+Math.cos(a)*CR*0.98,top-0.5,z+Math.sin(a)*CR*0.98,0.5,0.14,Math.PI*CR/n*1.0,qYaw(-a),capf());}
+  pendingFx.push({x,y:top-0.6,z,r:CR*0.7,until:Infinity,rate:3,acc:0,type:3,sy:0.3,persist:true});
+}
+function vWindmill(x,z,y0,yaw){
+  ringTower(x,z,y0,1.7,9,11,0.7,stone);const top=y0+11*0.7;let cap=-1;
+  for(let k=0;k<3;k++)cap=addPiece(x,top+0.3+k*0.5,z,1.5-k*0.45,0.25,1.5-k*0.45,qYaw(yaw),VC.slateR());
+  const g=new T.Group(),wood2=stdMat(0x6a4a2a),cloth=stdMat(0xe8dcc0,{side:T.DoubleSide});g.position.set(x+Math.sin(yaw)*1.9,top-0.4,z+Math.cos(yaw)*1.9);g.rotation.y=yaw;
+  const hub=new T.Group();g.add(hub);for(let i=0;i<4;i++){const arm=new T.Group();arm.rotation.z=i*Math.PI/2;hub.add(arm);const b=new T.Mesh(new T.BoxGeometry(0.16,5.2,0.12),wood2);b.position.y=2.6;arm.add(b);
+    const sl=new T.Mesh(new T.PlaneGeometry(1.1,3.8),cloth);sl.position.set(0.62,3.0,0.02);arm.add(sl);}
+  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});scene.add(g);VMILLS.push({hub,g,cap,spin:fr(0.6,1.0)});
+}
+function vPalm(x,z,y0){let px=x,pz=z,y=y0;const a=rnd()*6.28;for(let k=0;k<7;k++){y+=0.55;px+=Math.cos(a)*0.12;pz+=Math.sin(a)*0.12;addPiece(px,y,pz,0.16,0.28,0.16,qYaw(k*0.4),VC.log());}
+  for(let i=0;i<6;i++){const b=i/6*6.283,dx=Math.cos(b),dz=Math.sin(b);vBeam(px,y+0.25,pz,px+dx*2.2,y-0.5,pz+dz*2.2,0.06,VC.leaf);addPiece(px+dx*1.2,y+0.05,pz+dz*1.2,0.9,0.03,0.32,qAlong(dx,-0.35,dz),VC.leaf());}}
+function vFence(x0,z0,x1,z1,y0){const L=Math.hypot(x1-x0,z1-z0),n=Math.max(1,Math.round(L/2));for(let i=0;i<=n;i++){const t=i/n;addPiece(lerp(x0,x1,t),y0+0.55,lerp(z0,z1,t),0.08,0.55,0.08,qYaw(0),wood());}
+  for(const h of[0.45,0.85])vBeam(x0,y0+h,z0,x1,y0+h,z1,0.04,wood);}
+function vChimney(x,z,y0,h){for(let k=0;k<h;k++)addPiece(x,y0+0.3+k*0.6,z,0.32,0.3,0.32,qYaw(0),stone());pendingFx.push({x,y:y0+h*0.6+0.3,z,r:0.2,until:Infinity,rate:4,acc:0,type:2,sy:0.4,persist:true});}
+function buildVillage(v){
+  const y0=groundH(v.x,v.z),toC=Math.atan2(-v.z,-v.x),back=toC+Math.PI,X=v.x,Z=v.z;
+  buildWellAt(X,Z,y0);
+  const stall=(a,col)=>{const p=vPos(v,a,6.2);buildStall(p[0],p[1],y0,vFace(a),col);};
+  const ring=(n,R,from,span,fn)=>{for(let i=0;i<n;i++){const a=from+(n===1?0:(i/(n-1)-0.5)*span),p=vPos(v,a,R);fn(p[0],p[1],a,i);}};
+  const S=v.style||'meadow';
+  if(v.name==='Brookhollow'){ // market town with a chapel
+    ring(5,15,toC+Math.PI,4.6,(x,z,a,i)=>buildHouse(x,z,vFace(a),rr(4.6,5.6),rr(4,4.6),y0,[stone,VC.timber,mossy][i%3],[roofRed,slate,VC.thatch][i%3]));
+    for(let i=0;i<4;i++)stall(toC+Math.PI/4+i*Math.PI/2,[[0.7,0.15,0.12],[0.15,0.35,0.6],[0.75,0.6,0.15],[0.3,0.55,0.2]][i]);
+    const p=vPos(v,toC+0.9,19);buildHouse(p[0],p[1],vFace(toC+0.9),7,5,y0,stone,slate);const bt=vPos(v,toC+0.9,23);ringTower(bt[0],bt[1],y0,1.3,8,13,0.7,stone);addPiece(bt[0],y0+13*0.7+0.5,bt[1],0.45,0.5,0.45,qYaw(0.4),VC.gold());
+  }else if(v.name==='Eastmere'){ // farm hamlet along a lane, with a barn and a paddock
+    const ax=Math.cos(toC),az=Math.sin(toC),px=-az,pz=ax;
+    for(let i=0;i<4;i++){const t=-10+i*7,sd=i%2?1:-1,x=X+ax*t+px*sd*10,z=Z+az*t+pz*sd*10;buildHouse(x,z,Math.atan2(-px*sd,-pz*sd),rr(4.6,5.4),rr(4,4.4),y0,VC.timber,VC.thatch);}
+    const bx=X-ax*19,bz=Z-az*19;buildHouse(bx,bz,Math.atan2(ax,az),8,6,y0,VC.red,slate);
+    const fx=X+px*-20,fz=Z+pz*-20,h=6;vFence(fx-ax*h-px*h,fz-az*h-pz*h,fx+ax*h-px*h,fz+az*h-pz*h,y0);vFence(fx+ax*h-px*h,fz+az*h-pz*h,fx+ax*h+px*h,fz+az*h+pz*h,y0);vFence(fx+ax*h+px*h,fz+az*h+pz*h,fx-ax*h+px*h,fz-az*h+pz*h,y0);
+    for(let i=0;i<5;i++)addPiece(fx+fr(-3,3),y0+0.45,fz+fr(-3,3),0.6,0.45,0.45,qYaw(rnd()*6),VC.hay());
+    for(let i=0;i<5;i++){const t=-8+i*4;paintBlob(X+px*20+ax*t,Z+pz*20+az*t,2.6,'112,82,54',0.95,3);paintBlob(X+px*20+ax*t,Z+pz*20+az*t,1.1,'80,150,40',0.9,2);}
+    stall(toC+0.5,[0.75,0.6,0.15]);
+  }else if(v.name==='Hearthmoor'){ // a walled hold around a longhouse
+    const R=23,n=8,gi=Math.round(((toC%6.283)+6.283)%6.283/6.283*n)%n;
+    for(let i=0;i<n;i++){const a0=i/n*6.283,a1=(i+1)/n*6.283,p0=vPos(v,a0,R),p1=vPos(v,a1,R),len=Math.hypot(p1[0]-p0[0],p1[1]-p0[1]);wallSeg(p0[0],p0[1],p1[0],p1[1],y0,3,1.4,0.7,0.6,stone,i===gi?[[len/2-2.2,len/2+2.2]]:[]);}
+    const lh=vPos(v,back,13);buildHouse(lh[0],lh[1],vFace(back),10,5.5,y0,VC.log,VC.white);
+    ring(3,14,toC+Math.PI*0.5,2.6,(x,z,a)=>buildHouse(x,z,vFace(a),4.4,4,y0,VC.log,VC.white));
+    const wt=vPos(v,(gi+0.5)/n*6.283+0.5,R-2.5);ringTower(wt[0],wt[1],y0,1.6,8,11,0.7,stone);campfire(...vPos(v,toC,7),y0);
+  }else if(v.name==='Sandhaven'){ // oasis town: flat roofs, a pool with palms, a minaret
+    ring(5,15,back,4.4,(x,z,a,i)=>flatHouse(x,z,vFace(a),rr(4.4,5.4),rr(4,4.6),y0,VC.adobe,VC.adobe,i%2?2:1));
+    const ms=vPos(v,back+0.4,22);ringTower(ms[0],ms[1],y0,1.1,7,20,0.7,VC.adobe);addPiece(ms[0],y0+20*0.7+0.6,ms[1],0.7,0.6,0.7,qYaw(0.785),VC.gold());
+    const pool=vPos(v,toC+1.2,15);paintBlob(pool[0],pool[1],5,'40,120,150',0.95,6);for(let i=0;i<3;i++){const a=i*2.1,p=[pool[0]+Math.cos(a)*6,pool[1]+Math.sin(a)*6];vPalm(p[0],p[1],y0);}
+    stall(toC+0.4,[0.75,0.3,0.15]);stall(toC-0.4,[0.2,0.4,0.7]);
+  }else if(v.name==='Redrock'){ // houses on raised stone terraces, a water tower on stilts
+    for(let i=0;i<4;i++){const a=back+(i-1.5)*1.0,p=vPos(v,a,16),hgt=i%2?2:1;
+      for(let k=0;k<hgt;k++)for(let gx=-2;gx<=2;gx++)for(let gz=-2;gz<=2;gz++){if(k>0&&(Math.abs(gx)===2||Math.abs(gz)===2)&&rnd()<0.2)continue;const c=Math.cos(vFace(a)),s=Math.sin(vFace(a));addPiece(p[0]+(gx*c+gz*s)*1.5,y0+0.6+k*1.2,p[1]+(-gx*s+gz*c)*1.5,0.75,0.6,0.75,qYaw(vFace(a)),VC.canyon());}
+      for(let st=0;st<hgt*2;st++){const q=vPos(v,a,16-4.4-st*0.7);addPiece(q[0],y0+0.3+st*0.6*0.5,q[1],0.9,0.3+st*0.3*0.5,0.35,qYaw(vFace(a)+Math.PI/2),VC.canyon());}
+      buildHouse(p[0],p[1],vFace(a),4.4,4,y0+hgt*1.2,VC.canyon,()=>{const t=rr(0.85,1.1);return [0.42*t,0.22*t,0.14*t];});}
+    const wt=vPos(v,toC+0.85,13);for(const sx of[-1,1])for(const sz of[-1,1])addPiece(wt[0]+sx*1.1,y0+2.6,wt[1]+sz*1.1,0.12,2.6,0.12,qYaw(0),VC.log());
+    for(let i=0;i<3;i++)addPiece(wt[0],y0+5.3,wt[1]-1+i,1.4,0.08,0.45,qYaw(0),VC.log());ringTower(wt[0],wt[1],y0+5.4,1.2,8,3,0.6,VC.log);
+    stall(toC,[0.7,0.35,0.15]);
+  }else if(v.name==='Verdance'){ // stilt houses with rope bridges and totems
+    const pts=[];ring(5,15,toC+Math.PI,5.2,(x,z,a)=>{stiltHouse(x,z,vFace(a),4.2,3.8,y0,2.6,VC.log,VC.thatch);pts.push([x,z]);});
+    for(let i=0;i<pts.length-1;i++)for(const off of[-0.7,0.7]){const a=pts[i],b=pts[i+1],dx=b[0]-a[0],dz=b[1]-a[1],l=Math.hypot(dx,dz),ux=dx/l,uz=dz/l;vBeam(a[0]+ux*3+(-uz)*off,y0+3.4,a[1]+uz*3+ux*off,b[0]-ux*3+(-uz)*off,y0+3.4,b[1]-uz*3+ux*off,0.03,()=>[0.5,0.42,0.26],S_RUBBLE);}
+    for(const a of[toC+0.5,toC-0.5]){const p=vPos(v,a,9);const cols=[[0.7,0.2,0.1],[0.2,0.5,0.2],[0.85,0.65,0.2],[0.2,0.3,0.6]];for(let k=0;k<4;k++)addPiece(p[0],y0+0.45+k*0.9,p[1],0.42,0.45,0.42,qYaw(vFace(a)),cols[k]);}
+  }else if(v.name==='Highwatch'){ // windmill hill
+    for(let i=0;i<3;i++){const a=back+(i-1)*1.4,p=vPos(v,a,20);vWindmill(p[0],p[1],y0,a+Math.PI);}
+    ring(4,14,toC+Math.PI,3.6,(x,z,a,i)=>buildHouse(x,z,vFace(a),4.6,4.2,y0,VC.white,VC.blue));
+    const lt=vPos(v,toC+1.1,12);ringTower(lt[0],lt[1],y0,1.5,8,16,0.7,stone);addPiece(lt[0],y0+16*0.7+1.4,lt[1],0.05,1.4,0.05,qYaw(0),VC.log());addPiece(lt[0]+0.5,y0+16*0.7+2.4,lt[1],0.45,0.35,0.02,qYaw(0),VC.blue());
+    stall(toC+0.6,[0.2,0.35,0.7]);
+  }else if(v.name==='Cinderholm'){ // forge town: smoking chimneys and a great forge
+    ring(4,15,back,3.2,(x,z,a)=>{buildHouse(x,z,vFace(a),4.6,4.2,y0,VC.dark,VC.slateR);const c=vPos(v,a+0.16,17);vChimney(c[0],c[1],y0,7);});
+    const f=vPos(v,toC+0.85,15),fa=vFace(toC+0.85),c=Math.cos(fa),s=Math.sin(fa),P=(lx,lz)=>[f[0]+lx*c+lz*s,f[1]-lx*s+lz*c],W=8,D=6;
+    for(const [a,b] of[[P(-W/2,-D/2),P(W/2,-D/2)],[P(W/2,-D/2),P(W/2,D/2)],[P(-W/2,D/2),P(-W/2,-D/2)]])wallSeg(a[0],a[1],b[0],b[1],y0,5,1.3,0.6,0.5,VC.dark,[]);
+    for(let i=0;i<6;i++)for(let j=0;j<5;j++){const p=P(-W/2+(i+0.5)*W/6,-D/2+(j+0.5)*D/5);addPiece(p[0],y0+3.1,p[1],W/12*0.99,0.1,D/10*0.99,qYaw(fa),VC.dark());}
+    const an=P(0,0.8);addPiece(an[0],y0+0.4,an[1],0.35,0.4,0.25,qYaw(fa),VC.dark());addPiece(an[0],y0+0.9,an[1],0.7,0.12,0.3,qYaw(fa),[0.12,0.12,0.14]);
+    for(let i=0;i<5;i++){const p=P(-3+i*1.5,-1.8);addPiece(p[0],y0+0.25,p[1],0.7,0.25,0.5,qYaw(fa),[0.95,0.4,0.06]);}
+    const fz=P(0,-1.8);pendingFx.push({x:fz[0],y:y0+0.6,z:fz[1],r:2.5,until:Infinity,rate:14,acc:0,type:0,sy:0.4,persist:true});const ch=P(W/2-0.8,-D/2+0.8);vChimney(ch[0],ch[1],y0,9);
+  }else if(v.name==='Saltmere'){ // fishing village: beach stilt houses, boats and drying racks
+    ring(4,15,back,4.0,(x,z,a)=>stiltHouse(x,z,vFace(a),4.4,4,y0,1.1,VC.white,VC.teal));
+    for(let b=0;b<2;b++){const a=toC+0.8+b*0.5,p=vPos(v,a,12),yw=a+Math.PI/2,c=Math.cos(yw),s=Math.sin(yw);for(let i=0;i<5;i++){const t=(i-2)*0.9,w=1.2-Math.abs(i-2)*0.25;for(const sd of[-1,1])addPiece(p[0]+t*c+sd*w*s,y0+0.35,p[1]-t*s+sd*w*c,0.45,0.35,0.08,qYaw(yw),VC.teal());}addPiece(p[0],y0+0.75,p[1],2.2,0.06,0.9,qYaw(yw),VC.log());}
+    const r0=vPos(v,toC-0.9,11);for(let i=0;i<3;i++){const q=[r0[0]+i*1.8,r0[1]];addPiece(q[0],y0+1,q[1],0.06,1,0.06,qYaw(0),VC.log());}vBeam(r0[0],y0+1.9,r0[1],r0[0]+3.6,y0+1.9,r0[1],0.04,VC.log);
+    for(let i=0;i<6;i++)addPiece(r0[0]+0.3+i*0.6,y0+1.55,r0[1],0.08,0.3,0.03,qYaw(0),[0.75,0.72,0.66],S_INTACT);
+    const hb=vPos(v,toC-0.2,19);for(let i=0;i<5;i++){const t=(i-2)*1;vBeam(hb[0]+t,y0,hb[1]-1.4,hb[0]+t,y0+1.6-Math.abs(i-2)*0.25,hb[1],0.08,VC.log);vBeam(hb[0]+t,y0,hb[1]+1.4,hb[0]+t,y0+1.6-Math.abs(i-2)*0.25,hb[1],0.08,VC.log);}
+  }else if(v.name==='Sporewick'){ // the houses are giant mushrooms
+    const caps=[()=>{const t=rr(0.85,1.1);return rnd()<0.2?[0.9*t,0.88*t,0.96*t]:[0.46*t,0.18*t,0.64*t];},()=>{const t=rr(0.85,1.1);return rnd()<0.2?[0.9*t,0.92*t,0.96*t]:[0.14*t,0.42*t,0.66*t];},()=>{const t=rr(0.85,1.1);return rnd()<0.2?[0.95*t,0.9*t,0.8*t]:[0.62*t,0.2*t,0.3*t];}];
+    ring(5,15,toC+Math.PI,4.8,(x,z,a,i)=>mushHouse(x,z,rr(1.9,2.3),5+(i%2)*2,y0,caps[i%3]));
+    for(let i=0;i<6;i++){const a=i/6*6.283+0.3,p=vPos(v,a,10);addPiece(p[0],y0+0.7,p[1],0.07,0.7,0.07,qYaw(0),VC.stem());addPiece(p[0],y0+1.5,p[1],0.18,0.14,0.18,qYaw(0),caps[i%3]());pendingFx.push({x:p[0],y:y0+1.7,z:p[1],r:0.25,until:Infinity,rate:3,acc:0,type:3,sy:1,persist:true});}
+    stall(toC+0.5,[0.45,0.2,0.62]);
+  }else{ring(5,15,0,5,(x,z,a)=>buildHouse(x,z,vFace(a),5,4.4,y0,stone,roofRed));}
+  for(let i=0;i<3;i++){const a=rnd()*6.28,R=rr(3,7);addPiece(X+Math.cos(a)*R,y0+0.3,Z+Math.sin(a)*R,0.3,0.3,0.3,qYaw(rnd()*6),wood());}
+}
+function updateVillageFx(dt){for(const m of VMILLS){const on=pstate[m.cap]===S_INTACT;m.g.visible=on;if(on)m.hub.rotation.z+=dt*m.spin;}}
 function buildTent(x,z,y0,yaw,cloth){
   const c=Math.cos(yaw),s=Math.sin(yaw),put=(lx,y,lz,hx,hy,hz,q,cl)=>addPiece(x+lx*c+lz*s,y0+y,z-lx*s+lz*c,hx,hy,hz,q,cl);
   const W=1.25,half=1.35,H=1.8;
@@ -2697,7 +2804,7 @@ const LM={smoke:[],base:0,glow:null};
   for(let i=0;i<16;i++){const s=new T.Sprite(new T.SpriteMaterial({map:tex,color:new T.Color(0x57504e),transparent:true,depthWrite:false,opacity:0,fog:false}));s.renderOrder=3;s.material.rotation=i*0.9;scene.add(s);LM.smoke.push({s,t:i/16,w:rr(0.8,1.2)});}
   const g2=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xff5a1a,blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,opacity:0.7,fog:false}));g2.scale.set(80,34,1);g2.position.set(VOLC.x,LM.base+6,VOLC.z);g2.renderOrder=3;scene.add(g2);LM.glow=g2;
 })();
-function updateLandmarks(dt){KBEACON.material.opacity=(0.55+Math.sin(time*1.8)*0.25)*(SKYCTX?0.35:1);
+function updateLandmarks(dt){updateVillageFx(dt);KBEACON.material.opacity=(0.55+Math.sin(time*1.8)*0.25)*(SKYCTX?0.35:1);
   if(LIGHTH.beam){const on=pstate[LIGHTH.top]===S_INTACT;LIGHTH.beam.visible=LIGHTH.glow.visible=on;if(on){LIGHTH.beam.rotation.y+=dt*0.7;LIGHTH.glow.material.opacity=0.7+Math.sin(time*2)*0.1;}}
   const d=Math.hypot(camera.position.x-VOLC.x,camera.position.z-VOLC.z),far=0.4+0.6*(1-smooth(400,2200,d));
   for(const o of LM.smoke){o.t+=dt*0.03;if(o.t>1)o.t-=1;const k=o.t,s=o.s;s.position.set(VOLC.x+Math.sin(k*5+o.w*3)*k*22+k*70,LM.base+8+k*150,VOLC.z+Math.cos(k*3+o.w)*k*16);
