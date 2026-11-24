@@ -4775,7 +4775,7 @@ const AIX={
 const CRE={};
 function cp(par,geo,mat,p,r,s){const m=new T.Mesh(geo,mat);if(p)m.position.set(p[0],p[1],p[2]);if(r)m.rotation.set(r[0],r[1],r[2]);if(s!=null){if(typeof s==='number')m.scale.setScalar(s);else m.scale.set(s[0],s[1],s[2]);}par.add(m);return m;}
 function cg(par,p,r){const g=new T.Group();if(p)g.position.set(p[0],p[1],p[2]);if(r)g.rotation.set(r[0],r[1],r[2]);par.add(g);return g;}
-const SPH=(r,w,h)=>new T.SphereGeometry(r,w||14,h||10),BOX=(x,y,z)=>new T.BoxGeometry(x,y,z),CYL=(a,b,h,s)=>new T.CylinderGeometry(a,b,h,s||8),CON=(r,h,s)=>new T.ConeGeometry(r,h,s||7),ICO=(r,d)=>new T.IcosahedronGeometry(r,d||0),OCT=r=>new T.OctahedronGeometry(r,0),TOR=(r,t,a,b)=>new T.TorusGeometry(r,t,a||6,b||16);
+const SPH=(r,w,h)=>new T.SphereGeometry(r,Math.max(w||20,18),Math.max(h||14,12)),BOX=(x,y,z)=>new T.BoxGeometry(x,y,z),CYL=(a,b,h,s)=>new T.CylinderGeometry(a,b,h,Math.max(s||12,10)),CON=(r,h,s)=>new T.ConeGeometry(r,h,s||7),ICO=(r,d)=>new T.IcosahedronGeometry(r,d||0),OCT=r=>new T.OctahedronGeometry(r,0),TOR=(r,t,a,b)=>new T.TorusGeometry(r,t,a||6,b||16);
 const seeMat=(c,o,extra)=>new T.MeshStandardMaterial(Object.assign({color:cC(c),roughness:0.5,transparent:true,opacity:o,depthWrite:o>0.9},extra||{}));
 // a leg: a group at the hip with a thigh and shin hanging down, returned so it can swing
 function cLeg(par,mat,p,len,w,bend){const g=cg(par,p);cp(g,CYL(w,w*0.8,len*0.55,6),mat,[0,-len*0.27,0]);const k=cg(g,[0,-len*0.52,0]);cp(k,CYL(w*0.8,w*0.55,len*0.5,6),mat,[0,-len*0.24,0]);k.rotation.x=bend||0;g.knee=k;return g;}
@@ -5445,6 +5445,110 @@ CRE.sentinel={fall:'back',keep:7,strafe:0.8,
       e.flyY=e.T.fly;e.flyK=5;return [0,0];},end(e){e.flyY=null;e.flyK=null;e.mk=null;}}]};
 for(const k in CRE){NEWB[k]=CRE[k].build;ANIMX[k]=CRE[k].anim;AIX[k]=cBrain;}
 ELV.sentinel=23;setTimeout(()=>{LOOT_TABLE.sentinel={xp:300,gold:[26,48],drops:[['talon',0.3],['livecrystal',0.4],['tome',0.12]]};},0);
+/* ── monster look: soft shading, surface grain, rim light, ink outlines, contact shadows and bigger eyes ── */
+const MSTYLE={outline:!LOW||true};
+function monsterShade(sh){
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vMW;varying vec3 vMN;')
+    .replace('#include <project_vertex>','#include <project_vertex>\nvMW=(modelMatrix*vec4(transformed,1.0)).xyz;vMN=normalize(mat3(modelMatrix)*objectNormal);');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vMW;varying vec3 vMN;\n'+
+    'float mH(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}\n'+
+    'float mN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(mH(i),mH(i+vec3(1,0,0)),f.x),mix(mH(i+vec3(0,1,0)),mH(i+vec3(1,1,0)),f.x),f.y),mix(mix(mH(i+vec3(0,0,1)),mH(i+vec3(1,0,1)),f.x),mix(mH(i+vec3(0,1,1)),mH(i+vec3(1,1,1)),f.x),f.y),f.z);}')
+    .replace('#include <color_fragment>','#include <color_fragment>\n{float n=mN(vMW*7.0)*0.55+mN(vMW*21.0)*0.3+mN(vMW*53.0)*0.15;diffuseColor.rgb*=0.86+0.26*n;'+
+      'float up=normalize(vMN).y;diffuseColor.rgb*=mix(0.5,1.06,smoothstep(-0.85,0.65,up));diffuseColor.rgb=min(diffuseColor.rgb,vec3(0.86));}')
+    .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\n{vec3 V=normalize(cameraPosition-vMW);float fr=pow(1.0-max(dot(normalize(vMN),V),0.0),2.6);totalEmissiveRadiance+=vec3(0.62,0.7,0.85)*fr*0.32;}');
+}
+const OUTLINE_MAT=new T.ShaderMaterial({side:T.BackSide,
+  vertexShader:'void main(){vec4 mv=modelViewMatrix*vec4(position,1.0);vec3 n=normalize(normalMatrix*normal);mv.xyz+=n*(0.018+(-mv.z)*0.0024);gl_Position=projectionMatrix*mv;}',
+  fragmentShader:'void main(){gl_FragColor=vec4(0.05,0.04,0.06,1.0);}'});
+const BLOB_MAT=(function(){const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,2,32,32,31);g.addColorStop(0,'rgba(0,0,0,0.55)');g.addColorStop(0.6,'rgba(0,0,0,0.25)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
+  return new T.MeshBasicMaterial({map:new T.CanvasTexture(c),transparent:true,depthWrite:false,toneMapped:false,polygonOffset:true,polygonOffsetFactor:-2});})();
+const BLOB_GEO=new T.PlaneGeometry(1,1).rotateX(-Math.PI/2);
+const EYE_SOCKET=new T.MeshStandardMaterial({color:0x0c0a10,roughness:0.6}),EYE_GLINT=new T.MeshBasicMaterial({color:0xffffff,toneMapped:false});
+const SHARED_MON=new Set([OUTLINE_MAT,BLOB_MAT,EYE_SOCKET,EYE_GLINT]);
+const _sv=new T.Vector3();
+function stylizeMonster(e){
+  const m=e.m,eyes=[];m.g.updateMatrixWorld(true);
+  m.g.traverse(o=>{if(!o.isMesh||o.userData.styled)return;o.userData.styled=1;const mt=o.material;
+    if(mt&&mt.isMeshStandardMaterial&&!mt.userData.styled){mt.userData.styled=1;mt.onBeforeCompile=monsterShade;mt.customProgramCacheKey=()=>'monsterShade';}
+    const gp=o.geometry&&o.geometry.parameters;
+    if(mt&&mt.isMeshBasicMaterial&&o.geometry.type==='SphereGeometry'&&gp&&gp.radius<0.1&&!mt.transparent)eyes.push(o);
+    // ink outline for the bigger solid pieces
+    if(MSTYLE.outline&&mt&&!mt.transparent&&!mt.isMeshBasicMaterial&&o.geometry){if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();o.getWorldScale(_sv);
+      const r=o.geometry.boundingSphere.radius*Math.max(_sv.x,_sv.y,_sv.z);if(r>(o.geometry.type==='ConeGeometry'?0.22:0.12)&&o.geometry.attributes.normal){const h=new T.Mesh(o.geometry,OUTLINE_MAT);h.castShadow=false;h.userData.styled=1;h.raycast=()=>{};o.add(h);}}});
+  // bigger eyes with a dark socket and a glint
+  for(const o of eyes){const r=o.geometry.parameters.radius,p=o.position.clone(),f=p.lengthSq()>1e-6?p.clone().normalize():new T.Vector3(0,0,1);o.scale.multiplyScalar(1.3);
+    const s=new T.Mesh(o.geometry,EYE_SOCKET);s.position.copy(f).multiplyScalar(-r*0.45);s.scale.setScalar(1.45);s.userData.styled=1;o.add(s);
+    const gl=new T.Mesh(o.geometry,EYE_GLINT);gl.scale.setScalar(0.32);gl.position.set(r*0.35,r*0.4,0).addScaledVector(f,r*0.75);gl.userData.styled=1;o.add(gl);}
+  // a soft shadow on the ground beneath it
+  const b=new T.Mesh(BLOB_GEO,BLOB_MAT);b.renderOrder=1;scene.add(b);e.blob=b;
+}
+function updateBlob(e){const b=e.blob;if(!b)return;const gy=groundH(e.x,e.z),h=Math.max(0,e.y-gy),sc=(e.m.scale||1)/(e.T.scale||1)*(e.T.r*2.6+0.4)*(e.T.scale||1);
+  b.visible=e.m.g.visible&&!e.under&&h<14;b.position.set(e.x,gy+0.04,e.z);const k=1/(1+h*0.12);b.scale.set(sc*k+0.2,1,sc*k+0.2);b.material.opacity=1;}
+/* ── better bodies: jointed legs, and the weakest designs rebuilt ── */
+// a leg with a rounded hip, a tapered thigh, a knee joint, a shin and a foot
+cLeg=function(par,mat,p,len,w,bend){const g=cg(par,p);cp(g,SPH(w*1.15,12,9),mat,[0,0,0]);cp(g,CYL(w*1.05,w*0.78,len*0.52,10),mat,[0,-len*0.26,0]);
+  const k=cg(g,[0,-len*0.52,0]);cp(k,SPH(w*0.82,10,8),mat,[0,0,0]);cp(k,CYL(w*0.8,w*0.55,len*0.46,10),mat,[0,-len*0.23,0]);
+  cp(k,SPH(w*0.75,10,8),mat,[0,-len*0.47,w*0.45],0,[1,0.55,1.6]);k.rotation.x=bend||0;g.knee=k;return g;};
+function cArm(par,mat,p,len,w,handMat,fingers){const g=cg(par,p);cp(g,SPH(w*1.2,12,9),mat,[0,0,0]);cp(g,CYL(w,w*0.85,len*0.5,10),mat,[0,-len*0.25,0]);const el=cg(g,[0,-len*0.5,0]);cp(el,SPH(w*0.85,10,8),mat,[0,0,0]);
+  cp(el,CYL(w*0.85,w*0.7,len*0.45,10),mat,[0,-len*0.22,0]);const hd=cg(el,[0,-len*0.47,0]);cp(hd,SPH(w*0.95,12,9),handMat||mat,[0,0,0],0,[1,0.8,1.1]);
+  for(let i=0;i<(fingers||0);i++)cp(hd,CON(w*0.25,w*1.1,6),handMat||mat,[(i-(fingers-1)/2)*w*0.55,-w*0.8,w*0.35],[Math.PI-0.3,0,0]);el.rotation.x=-0.25;g.elbow=el;g.hand=hd;return g;}
+function fur(par,mat,n,rx,ry,rz,size,y0){for(let i=0;i<n;i++){const a=Math.random()*6.283,b=fr(-0.3,1);cp(par,CON(size*fr(0.7,1.2),size*fr(1.6,2.6),5),mat,[Math.cos(a)*rx,(y0||0)+b*ry,Math.sin(a)*rz],[fr(-0.5,0.5)+Math.sin(a)*0.6,a,-Math.cos(a)*0.6+fr(-0.3,0.3)]);}}
+/* Yeti: hunched, shaggy, long-armed, horned, with a leathery blue face and fangs */
+CRE.yeti.build=function(T0){const g=new T.Group(),furM=stdMat(0xdfe6ec,{roughness:1}),shag=stdMat(0xc8d2dc,{roughness:1,flatShading:true}),skin=stdMat(0x5a6a88,{roughness:0.7}),horn=stdMat(0xd8c8a8,{roughness:0.5}),tooth=stdMat(0xf4f0e8,{roughness:0.3}),eye=glowMat(0x6ad0ff),mouthM=stdMat(0x2a1a2a);
+  const body=cg(g,[0,1.5,0]);body.rotation.x=0.22;cp(body,SPH(0.82,22,16),furM,[0,0,0],0,[1.05,1.08,0.9]);cp(body,SPH(0.62,18,12),furM,[0,0.55,-0.05],0,[1.25,0.7,0.95]);
+  cp(body,SPH(0.52,18,12),skin,[0,-0.05,0.45],0,[1,1.05,0.55]);fur(body,shag,26,0.8,0.7,0.75,0.13,0.1);fur(body,shag,10,0.7,0.15,0.5,0.12,0.75);
+  const head=cg(body,[0,0.95,0.42]);cp(head,SPH(0.4,20,14),furM,[0,0.05,-0.05],0,[1.05,1,1]);cp(head,SPH(0.3,18,12),skin,[0,-0.05,0.18],0,[1,0.95,0.8]);
+  cp(head,SPH(0.17,14,10),skin,[0,-0.14,0.33],0,[1.2,0.7,0.9]);cp(head,BOX(0.3,0.06,0.1),mouthM,[0,-0.2,0.42]);for(const sx of[-1,1]){cp(head,CON(0.035,0.13,6),tooth,[sx*0.1,-0.13,0.45],[Math.PI,0,0]);
+    cp(head,SPH(0.055,8,6),eye,[sx*0.12,0.06,0.39]);cp(head,BOX(0.14,0.035,0.05),skin,[sx*0.12,0.14,0.37],[0,0,-sx*0.35]);
+    const h=cg(head,[sx*0.28,0.28,-0.05]);cp(h,CON(0.09,0.32,8),horn,[0,0.12,0],[0,0,-sx*0.5]);cp(h,CON(0.05,0.22,8),horn,[sx*0.17,0.3,0.04],[0.3,0,-sx*1.3]);}
+  fur(head,shag,10,0.35,0.15,0.3,0.08,0.25);
+  const L={};for(const sx of[-1,1]){const a=cArm(body,furM,[sx*0.88,0.5,0.1],1.35,0.22,skin,4);a.rotation.z=sx*0.12;fur(a,shag,6,0.22,0.3,0.22,0.09,-0.3);L[sx<0?'armL':'armR']=a;
+    const lg=cLeg(g,furM,[sx*0.42,1.0,0],1.0,0.26,0.15);fur(lg,shag,5,0.26,0.25,0.26,0.09,-0.25);L[sx<0?'legL':'legR']=lg;}
+  return {g,mats:[furM,skin,shag],limbs:{},L,head,body};};
+/* Dynamite Bandit: poncho, gloves, boots, a face under the hat, bandana over the mouth */
+CRE.bandit.build=function(T0){const g=new T.Group(),pants=stdMat(0x5a4030),shirt=stdMat(0xc89a6a),poncho=stdMat(0x9a3a2a,{roughness:0.95}),stripe=stdMat(0xe8c060),skin=stdMat(0xc08a64),band=stdMat(0x2a3a6a),hat=stdMat(0x5a3a1a),boot=stdMat(0x3a2418),dyn=stdMat(0xd03a2a),eye=stdMat(0x1a1010,{roughness:0.3}),belt=stdMat(0x2a1a10);
+  const body=cg(g,[0,1.02,0]);cp(body,CYL(0.24,0.2,0.62,14),shirt,[0,0.12,0]);const pc=cp(body,CON(0.36,0.5,18),poncho,[0,0.33,0]);cp(body,CYL(0.335,0.36,0.05,20),stripe,[0,0.11,0]);cp(body,CYL(0.24,0.26,0.04,20),stripe,[0,0.27,0]);
+  cp(body,CYL(0.22,0.22,0.08,16),belt,[0,-0.18,0]);for(let i=0;i<5;i++)cp(body,CYL(0.035,0.035,0.22,8),dyn,[-0.18+i*0.09,-0.2,0.19],[0.15,0,0]);
+  const head=cg(body,[0,0.68,0]);cp(head,SPH(0.17,18,14),skin,[0,0,0]);cp(head,SPH(0.04,8,6),skin,[0,-0.01,0.17]);for(const sx of[-1,1]){cp(head,SPH(0.025,8,6),eye,[sx*0.06,0.03,0.15]);cp(head,BOX(0.06,0.015,0.02),hat,[sx*0.06,0.07,0.155],[0,0,sx*0.2]);}
+  cp(head,new T.SphereGeometry(0.172,18,10,0,6.283,Math.PI*0.52,Math.PI*0.48),band,[0,-0.01,0.012]);cp(head,CON(0.08,0.18,6),band,[0,-0.05,-0.15],[-1.9,0,0]);
+  cp(head,CYL(0.36,0.34,0.025,22),hat,[0,0.12,0]);cp(head,CYL(0.15,0.18,0.2,16),hat,[0,0.22,0]);cp(head,CYL(0.185,0.185,0.04,16),stripe,[0,0.15,0]);
+  const L={};for(const sx of[-1,1]){const a=cArm(body,shirt,[sx*0.3,0.35,0],0.62,0.07,stdMat(0x4a3020),0);L[sx<0?'armL':'armR']=a;const lg=cLeg(g,pants,[sx*0.12,0.74,0],0.74,0.085,0.05);cp(lg.knee,CYL(0.095,0.11,0.26,12),boot,[0,-0.32,0.02]);L[sx<0?'legL':'legR']=lg;}
+  const stick=cp(L.armR.hand,CYL(0.035,0.035,0.22,8),dyn,[0,-0.06,0.05]);stick.visible=false;
+  return {g,mats:[shirt,pants,poncho,skin],limbs:{},head,body,L,stick};};
+/* Shadow Panther: deep chest, slim waist, muscular legs, a sheen on the black fur */
+CRE.panther.build=function(T0){const g=new T.Group(),fur=seeMat(0x2a2634,1,{roughness:0.35,metalness:0.15}),spot=seeMat(0x3a2a5a,1,{roughness:0.4,emissive:cC(0x2a1a4a),emissiveIntensity:0.5}),eyeM=new T.MeshBasicMaterial({color:cC(0x7aff5a),transparent:true,toneMapped:false}),nose=seeMat(0x120e14,1);
+  const body=cg(g,[0,0.78,0]);cp(body,SPH(0.36,22,16),fur,[0,0.03,0.3],0,[0.95,0.95,1.2]);cp(body,SPH(0.3,20,14),fur,[0,0,-0.35],0,[0.85,0.85,1.3]);cp(body,CYL(0.22,0.26,0.5,14),fur,[0,0,0],[Math.PI/2,0,0]);
+  for(let i=0;i<10;i++)cp(body,SPH(0.05,8,6),spot,[fr(-0.25,0.25),0.25+fr(-0.05,0.05),fr(-0.6,0.5)],0,[1,0.3,1]);
+  const head=cg(body,[0,0.25,0.78]);cp(head,CYL(0.13,0.17,0.35,12),fur,[0,-0.1,-0.15],[1.1,0,0]);cp(head,SPH(0.21,20,14),fur,[0,0,0],0,[1.05,0.9,1.05]);cp(head,SPH(0.12,14,10),fur,[0,-0.06,0.17],0,[1,0.8,1.1]);cp(head,SPH(0.04,8,6),nose,[0,-0.02,0.29]);
+  for(const sx of[-1,1]){cp(head,CON(0.07,0.15,6),fur,[sx*0.13,0.17,-0.03],[0,0,-sx*0.2]);cp(head,SPH(0.04,8,6),eyeM,[sx*0.09,0.05,0.17],0,[1.3,0.8,1]);cp(head,CYL(0.004,0.004,0.22,3),seeMat(0xd8d8d8,1),[sx*0.12,-0.05,0.22],[0,0,sx*1.4]);}
+  const legs=[];for(const [x,z] of[[-1,0.45],[1,0.45],[-1,-0.5],[1,-0.5]]){const l=cLeg(body,fur,[x*0.2,-0.05,z],0.8,0.09,z>0?-0.2:0.35);legs.push(l);}
+  const tail=[];let p=cg(body,[0,0.1,-0.72]);for(let i=0;i<7;i++){cp(p,CYL(0.055-i*0.004,0.05-i*0.004,0.24,8),fur,[0,0,-0.12],[Math.PI/2,0,0]);tail.push(p);p=cg(p,[0,0,-0.23]);}
+  return {g,mats:[fur,spot],limbs:{},head,body,legs,tail,fur,eyeM};};
+/* Griffin: an eagle's head, chest ruff and layered feathered wings on a lion's body */
+CRE.griffin.build=function(T0){const g=new T.Group(),lion=stdMat(0xc89a5a),white=stdMat(0xf0e8d8,{roughness:0.8}),beakM=stdMat(0xe0a020,{roughness:0.4}),feath=stdMat(0xa87a48,{side:T.DoubleSide}),tip=stdMat(0xf0e8d8,{side:T.DoubleSide}),dark=stdMat(0x5a3a20),eye=glowMat(0xffd24a),talon=stdMat(0x2a2018);
+  const body=cg(g,[0,0.9,0]);cp(body,SPH(0.42,22,16),lion,[0,-0.02,-0.3],0,[0.85,0.8,1.35]);cp(body,SPH(0.42,22,16),white,[0,0.1,0.32],0,[0.95,1,1]);
+  for(let i=0;i<14;i++){const a=(i/14-0.5)*2.6;cp(body,CON(0.09,0.3,6),white,[Math.sin(a)*0.32,0.05-Math.abs(a)*0.08,0.62+Math.cos(a)*0.05],[2.4,0,a*0.4]);}
+  const head=cg(body,[0,0.55,0.7]);cp(head,SPH(0.25,20,14),white,[0,0,0]);const bk=cg(head,[0,-0.02,0.2]);cp(bk,CON(0.1,0.28,10),beakM,[0,0,0.1],[Math.PI/2,0,0]);cp(bk,CON(0.05,0.12,8),beakM,[0,-0.06,0.22],[Math.PI*0.85,0,0]);
+  for(const sx of[-1,1]){cp(head,SPH(0.05,8,6),eye,[sx*0.13,0.06,0.15]);cp(head,BOX(0.12,0.03,0.04),dark,[sx*0.12,0.12,0.15],[0,0,-sx*0.3]);for(let k=0;k<3;k++)cp(head,CON(0.04,0.22,5),white,[sx*0.08,0.12,-0.12-k*0.05],[-0.9-k*0.2,0,sx*0.3]);}
+  const W=[];for(const sx of[-1,1]){const w=cg(body,[sx*0.3,0.3,0.2]);w.rotation.y=sx*0.2;
+    for(let i=0;i<9;i++){const len=0.55+i*0.08-Math.max(0,i-6)*0.12,f=cp(w,CON(0.1,len,6),i>5?tip:feath,[sx*(0.15+i*0.16),0.02*i,-len*0.45],[-Math.PI/2,0,sx*(0.1-i*0.05)],[1,1,0.2]);}
+    cp(w,CYL(0.06,0.03,1.5,8),feath,[sx*0.75,0.05,0.05],[0,0,Math.PI/2]);W.push(w);}
+  const legs=[];for(const [x,z] of[[-1,0.4],[1,0.4],[-1,-0.55],[1,-0.55]]){const front=z>0,l=cLeg(body,front?white:lion,[x*0.2,-0.15,z],0.75,0.08,front?-0.25:0.35);
+    if(front)for(let k=0;k<3;k++)cp(l.knee,CON(0.02,0.1,5),talon,[(k-1)*0.04,-0.4,0.1],[1.9,0,0]);legs.push(l);}
+  const tail=cg(body,[0,0.05,-0.75]);cp(tail,CYL(0.03,0.025,0.7,8),lion,[0,-0.05,-0.32],[1.2,0,0]);cp(tail,SPH(0.1,10,8),dark,[0,-0.24,-0.62],0,[0.8,1.2,0.8]);
+  return {g,mats:[lion,white,feath],limbs:{},head,body,W,legs};};
+/* Mummy: spiral wrappings, a hunch, one eye glowing through the gaps, loose trailing strips */
+CRE.mummy.build=function(T0){const g=new T.Group(),wrap=stdMat(0xd2c7a4,{roughness:1}),old=stdMat(0xa8987a,{roughness:1}),dk=stdMat(0x2a1e14),eye=glowMat(0x7affd8),gold=stdMat(0xc8a040,{metalness:0.6,roughness:0.35});
+  const body=cg(g,[0,1.0,0]);body.rotation.x=0.18;cp(body,CYL(0.25,0.21,0.95,16),dk,[0,0.1,0]);
+  for(let i=0;i<11;i++){const b=cp(body,TOR(0.25-Math.abs(i-5)*0.006,0.045,6,20),i%3?wrap:old,[0,-0.35+i*0.085,0],[Math.PI/2+fr(-0.25,0.25),fr(-0.2,0.2),fr(-0.25,0.25)],[1,0.85,1]);}
+  cp(body,BOX(0.32,0.12,0.05),gold,[0,0.5,0.22],[0.2,0,0]);
+  const head=cg(body,[0,0.78,0.05]);cp(head,SPH(0.2,18,14),dk,[0,0,0],0,[1,1.1,1]);for(let i=0;i<7;i++)cp(head,TOR(0.18,0.04,6,18),i%2?wrap:old,[0,-0.14+i*0.05,0],[Math.PI/2+fr(-0.4,0.4),fr(-0.3,0.3),fr(-0.4,0.4)],[1,1,1]);
+  cp(head,SPH(0.045,8,6),eye,[0.07,0.03,0.18]);
+  const L={};for(const sx of[-1,1]){const a=cArm(body,wrap,[sx*0.33,0.45,0],0.68,0.075,old,3);L[sx<0?'armL':'armR']=a;L[sx<0?'legL':'legR']=cLeg(g,wrap,[sx*0.13,0.62,0],0.62,0.09,0.08);}
+  const strips=[];for(let i=0;i<6;i++){const s=cg(body,[fr(-0.22,0.22),fr(-0.4,0.45),fr(-0.24,0.1)]);cp(s,BOX(0.07,0.6,0.012),i%2?wrap:old,[0,-0.3,0]);strips.push(s);}
+  const lash=cg(body,[0.34,0.1,0.1]);cp(lash,BOX(0.08,0.02,1),wrap,[0,0,0.5]);lash.scale.z=0.01;
+  return {g,mats:[wrap,old,dk],limbs:{},head,body,L,strips,lash};};
+NEWB.yeti=CRE.yeti.build;NEWB.bandit=CRE.bandit.build;NEWB.panther=CRE.panther.build;NEWB.griffin=CRE.griffin.build;NEWB.mummy=CRE.mummy.build;
 /* treant roots: a warning ring, then thorny roots burst up and grab */
 const ROOTS=[],ROOT_GEO=new T.ConeGeometry(0.2,1.9,6),ROOT_MAT=stdMat(0x5a3e26,{roughness:0.9});
 function rootsAt(x,z,e){ROOTS.push({x,z,t:0,e,hit:false,g:null});shockRing(x,groundH(x,z)+0.15,z,0x8ac04a,2.4,0.8);}
@@ -5610,7 +5714,7 @@ function spawnEnemy(type,x,z,o){
     camp:o.camp||null,home:o.home||{x,z,r:6},aggro:!!o.aggro,wp:null,wT:0,chargeCd:2,dir:null,hitDone:false,minion:!!o.minion,despawn:false};
   e.base=base;m.g.rotation.order='YXZ';e.mini=!!o.mini;e.lv=Math.max(1,(ELV[type]||1)+(o.elite?2:0)-(o.mini?1:0));e.badge=mkBadge(e);if(o.mini){e.hp=e.max=T0.hp*0.3;}if(base==='worm'){e.under=true;e.sink=4.6;e.y=groundH(x,z)-4.6;}if(o.elite){e.elite=true;e.hp=e.max=T0.hp*4;e.dmgMul=1.5;const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:0xffd24a,blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.45}));gl.scale.set(2.4,2.4,1);gl.position.y=T0.fly?0:T0.h/(m.scale||1)*0.55;m.g.add(gl);}
   if(T0.fly&&rise)e.m.g.scale.setScalar(0.01);
-  enemyScale(e);
+  enemyScale(e);stylizeMonster(e);
   enemies.push(e);
   if(type==='golem'&&rise)SFX.growl(x,z);
   return e;
@@ -6573,7 +6677,7 @@ function killEnemy(e,quiet){
 }
 function removeEnemy(k){
   const e=enemies[k];scene.remove(e.m.g,e.bar.bg,e.bar.fill);
-  e.m.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material!==barBgMat)o.material.dispose();});
+  e.m.g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material&&o.material!==barBgMat&&!SHARED_MON.has(o.material))o.material.dispose();});if(e.blob)scene.remove(e.blob);
   e.bar.fill.material.dispose();if(e.badge){scene.remove(e.badge);e.badge.material.dispose();}dropMark(e);enemies.splice(k,1);if(e===BOSS.e){BOSS.e=null;BOSS.reset();}
 }
 function enemyStrike(e,dist){
@@ -6656,7 +6760,7 @@ function animateEnemy(e,dt){
   if(e.yawT!=null&&!frozen){let d=e.yawT-e.yaw;d=Math.atan2(Math.sin(d),Math.cos(d));e.yaw+=d*Math.min(1,dt*8);}
   if(!frozen)e.phase+=dt*(sp*(e.base==='golem'?2.2:3.4)+0.5);
   const sw=Math.sin(e.phase),mv=Math.min(1,sp/T0.speed);let lean=0;
-  m.g.position.set(e.x,e.y,e.z);m.g.rotation.y=e.yaw;
+  m.g.position.set(e.x,e.y,e.z);m.g.rotation.y=e.yaw;updateBlob(e);
   if(e.base==='spider'){if(!frozen){const L2=m.limbs.legs;for(let i=0;i<8;i++){const ph=e.phase*1.6+(i%2)*Math.PI+(i<4?0:Math.PI*0.5);L2[i].rotation.z=Math.sin(ph)*0.35*mv+(e.state==='crouch'?0.45:0);L2[i].rotation.x=Math.cos(ph)*0.18*mv;}
     m.g.position.y+=Math.abs(Math.sin(e.phase*1.6))*0.03*mv-(e.state==='crouch'?0.14:0);if(e.state==='spit')lean=-0.4*Math.sin(Math.min(1,e.t/0.45)*Math.PI/2);}}
   else if(e.base==='wisp'){if(!frozen){m.head.rotation.y+=dt*1.5;m.rings[0].rotation.z+=dt*2.4;m.rings[1].rotation.z-=dt*1.7;}
