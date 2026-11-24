@@ -539,8 +539,8 @@ body.touch #riftbar{max-width:calc(100% - 190px);white-space:nowrap;gap:8px;padd
 @media (max-width:700px){.hm-shade{background:linear-gradient(0deg,rgba(6,10,16,.92) 35%,rgba(6,10,16,.4) 70%,rgba(6,10,16,.1))}.hm-side{width:100%;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:18px;justify-content:flex-start}.hm-title{font-size:44px}.hm-foot{margin-top:0}}
 @media (prefers-reduced-motion:reduce){.hm-btn{transition:none}.hm-btn:hover,.hm-btn:focus-visible{transform:none}}
 #dmg{position:fixed;inset:0;pointer-events:none;z-index:3;overflow:hidden}
-#dmg i{position:absolute;left:0;top:0;font:800 19px/1 var(--ui);font-style:normal;white-space:nowrap;text-shadow:0 2px 0 rgba(0,0,0,.6),0 0 10px rgba(0,0,0,.35);will-change:transform,opacity;opacity:0}
-#dmg i.big{font-size:27px}
+#dmg i{position:absolute;left:0;top:0;font:700 22px/1 'Alegreya SC',var(--ui);font-style:normal;white-space:nowrap;-webkit-text-stroke:3px rgba(20,12,6,.85);paint-order:stroke fill;text-shadow:0 3px 8px rgba(0,0,0,.45);will-change:transform,opacity;opacity:0}
+#dmg i.big{font-size:32px}
 @media (prefers-reduced-motion:reduce){.bk-motes,.bk-stage::before,.pg.spl .art::after,.pg .bkb.go,.pg .stbar::after{animation:none!important}#book.opened .bk-cover{animation-duration:.01s}}
 
 /* ── house style: ink on parchment for anything you read, plain inked lettering over the world ── */
@@ -2753,6 +2753,58 @@ const SFX={
   lift(){sTone({dur:2.2,wave:'sine',f0:120,f1:420,g:0.1,a:0.5,wet:0.7});},
   select(i){const f=[440,330,392,880,740,587,523][i%7]*(i>=7?1.26:1);sTone({dur:0.16,wave:'triangle',f0:f,f1:f*1.5,g:0.05,wet:0.4});}
 };
+/* ── a bank of richer sounds, rendered once when audio starts, each in several takes ── */
+const SB={ready:false,bufs:{}};
+function sbBuild(){
+  const c=AU.ctx;if(!c||SB.ready)return;const SR=c.sampleRate;
+  const mk=(dur,fn)=>{const n=Math.floor(dur*SR),b=c.createBuffer(1,n,SR),d=b.getChannelData(0);fn(d,n,SR);let m=0;for(let i=0;i<n;i++)m=Math.max(m,Math.abs(d[i]));if(m>0)for(let i=0;i<n;i++)d[i]/=m;return b;};
+  const rnd2=()=>Math.random()*2-1;
+  // a resonant band-pass, run sample by sample so the centre can move
+  const bp=()=>{let x1=0,x2=0,y1=0,y2=0;return (x,f,q,sr)=>{const w=2*Math.PI*Math.min(f,sr*0.45)/sr,al=Math.sin(w)/(2*q),a0=1+al,b0=al/a0,b2=-al/a0,a1=-2*Math.cos(w)/a0,a2=(1-al)/a0;const y=b0*x+b2*x2-a1*y1-a2*y2;x2=x1;x1=x;y2=y1;y1=y;return y;};};
+  const lp=()=>{let y=0;return (x,k)=>(y+=(x-y)*k);};
+  const add=(k,b)=>{(SB.bufs[k]=SB.bufs[k]||[]).push(b);};
+  for(let v=0;v<4;v++){
+    // wood: a few inharmonic modes, a knock of noise
+    const fw=170+Math.random()*90;add('wood',mk(0.45,(d,n,sr)=>{const L=lp();for(let i=0;i<n;i++){const t=i/sr;let s=0;[[1,0.09,1],[2.32,0.05,0.6],[4.25,0.03,0.35],[6.6,0.018,0.2]].forEach(([r,dc,a])=>{s+=Math.sin(2*Math.PI*fw*r*t)*Math.exp(-t/dc)*a;});s+=L(rnd2(),0.35)*Math.exp(-t/0.012)*1.4;d[i]=s;}}));
+    // stone: brighter modes and grit
+    const fs=380+Math.random()*260;add('stone',mk(0.4,(d,n,sr)=>{const B=bp();for(let i=0;i<n;i++){const t=i/sr;let s=0;[[1,0.05,0.8],[1.73,0.035,0.6],[2.9,0.025,0.45],[4.1,0.018,0.3],[5.7,0.012,0.2]].forEach(([r,dc,a])=>{s+=Math.sin(2*Math.PI*fs*r*t+r)*Math.exp(-t/dc)*a;});
+      const gr=Math.random()<0.02?rnd2()*3:0;s+=B(rnd2()+gr,1800+Math.random()*900,0.9,sr)*Math.exp(-t/0.06)*1.6;d[i]=s;}}));
+    // a blow landing on a body: a thump and a short crunch
+    add('flesh',mk(0.3,(d,n,sr)=>{const L=lp(),L2=lp();let ph=0;for(let i=0;i<n;i++){const t=i/sr,f=95*Math.exp(-t*9)+48;ph+=2*Math.PI*f/sr;let s=Math.sin(ph)*Math.exp(-t/0.08)*1.2;
+      s+=L(rnd2(),0.25)*Math.exp(-t/0.05)*0.9;const cr=Math.round(rnd2()*3)/3;s+=L2(cr,0.6)*Math.exp(-t/0.018)*0.5;d[i]=s;}}));
+    // footsteps
+    add('grass',mk(0.14,(d,n,sr)=>{let p=0;const g0=Math.random()*0.02;for(let i=0;i<n;i++){const t=i/sr,x=rnd2(),hp=x-p;p=x;let e=0;for(const g of[g0,0.03+g0,0.06])e+=Math.exp(-Math.abs(t-g)/0.012)*(t>=g?1:0.2);d[i]=hp*e*(0.7+Math.random()*0.3);}}));
+    add('stonestep',mk(0.12,(d,n,sr)=>{const L=lp();for(let i=0;i<n;i++){const t=i/sr;d[i]=L(rnd2(),0.5)*Math.exp(-t/0.01)*0.8+Math.sin(2*Math.PI*(140+v*20)*t)*Math.exp(-t/0.03)*0.6;}}));
+    // a swing through the air
+    add('swish',mk(0.26,(d,n,sr)=>{const B=bp();for(let i=0;i<n;i++){const t=i/sr,u=t/0.26,f=3200*Math.pow(0.25,u);d[i]=B(rnd2(),f,1.6,sr)*Math.sin(Math.PI*Math.min(1,u*1.2))*1.2;}}));
+  }
+  for(let v=0;v<3;v++){
+    // explosion: a sub drop, a roar that darkens as it dies, then crackling debris
+    add('boom',mk(2.4,(d,n,sr)=>{const L=lp();let ph=0;for(let i=0;i<n;i++){const t=i/sr,f=72*Math.exp(-t*1.6)+26;ph+=2*Math.PI*f/sr;let s=Math.sin(ph)*Math.exp(-t/0.6)*1.3;
+      s+=L(rnd2(),0.02+0.5*Math.exp(-t*3.5))*Math.exp(-t/0.45)*1.8;if(Math.random()<0.004*Math.exp(-t*1.2))s+=rnd2()*1.2;d[i]=s;}}));
+    // the roar of a thrown flame
+    add('whoosh',mk(0.55,(d,n,sr)=>{const B=bp();for(let i=0;i<n;i++){const t=i/sr,u=t/0.55,f=500+1300*Math.sin(Math.PI*u*0.8);let s=B(rnd2(),f,0.8,sr)*Math.sin(Math.PI*u)*1.3;if(Math.random()<0.003)s+=rnd2()*0.8;d[i]=s;}}));
+  }
+  SB.ready=true;
+}
+function playS(k,o){const c=AU.ctx;if(!c||!AU.on||!SB.ready)return false;const L=SB.bufs[k];if(!L)return false;o=o||{};
+  const src=c.createBufferSource();src.buffer=L[Math.floor(Math.random()*L.length)];src.playbackRate.value=(o.rate||1)*(0.9+Math.random()*0.2);
+  const g=c.createGain();g.gain.value=(o.g==null?0.5:o.g);src.connect(g);
+  if(o.lp){const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=o.lp;g.connect(f);route(f,o);}else route(g,o);src.start(c.currentTime+(o.t||0)+0.003);return true;}
+// the old one-note sounds become layered ones once the bank is ready
+(function(){const old={hit:SFX.hit,thud:SFX.thud,boom:SFX.boom,fireball:SFX.fireball,step:SFX.step,swipe:SFX.swipe,land:SFX.land,slam:SFX.slam,pop:SFX.pop};
+  const onStone=()=>{for(const v of VILLAGES)if((!v.sky||SKYCTX)&&Math.hypot(player.x-v.x,player.z-v.z)<(v.r||26)*0.7)return true;return dirtMask(player.x,player.z)>0.4||SKYCTX;};
+  SFX.hit=(x,z)=>{const s=spat(x,z);if(!playS('flesh',{g:0.55*s.vol,pan:s.pan,wet:0.15}))old.hit(x,z);};
+  SFX.thud=(v,x,z)=>{const s=spat(x,z),g=Math.min(0.6,v*1.3)*s.vol;if(!playS(Math.random()<0.5?'stone':'wood',{g,pan:s.pan,wet:0.25,rate:fr(0.8,1.1)}))return old.thud(v,x,z);};
+  SFX.boom=(x,z,big)=>{const s=spat(x,z),d=Math.hypot(x-player.x,z-player.z);if(!playS('boom',{g:Math.min(1,0.75*big)*s.vol,pan:s.pan,wet:0.5,lp:d>40?900:20000,rate:big>0.8?0.85:1}))return old.boom(x,z,big);};
+  SFX.fireball=()=>{if(!playS('whoosh',{g:0.32,wet:0.2}))old.fireball();};
+  SFX.step=()=>{if(!playS(onStone()?'stonestep':'grass',{g:onStone()?0.12:0.16,rate:fr(0.9,1.15)}))old.step();};
+  SFX.swipe=(x,z)=>{const s=spat(x,z);if(!playS('swish',{g:0.32*s.vol,pan:s.pan}))old.swipe(x,z);};
+  SFX.land=v=>{if(!playS(onStone()?'stonestep':'grass',{g:0.35*v,rate:0.7}))old.land(v);else playS('flesh',{g:0.2*v,rate:0.6,lp:600});};
+  SFX.slam=(x,z)=>{const s=spat(x,z);if(!playS('boom',{g:0.6*s.vol,pan:s.pan,wet:0.4,lp:1400,rate:0.75}))return old.slam(x,z);playS('stone',{g:0.5*s.vol,pan:s.pan,rate:0.6});};
+  SFX.pop=(x,z,type)=>{if(type==='wisp')return old.pop(x,z,type);const s=spat(x,z);if(!playS('flesh',{g:0.5*s.vol,pan:s.pan,rate:0.75,wet:0.2}))old.pop(x,z,type);};
+})();
+
 
 /* ───────────────────────── player, input, camera ───────────────────────── */
 const player={hasteT:0,chillT:0,burnT:0,poisonT:0,healT:0,healRate:0,hp:100,max:100,lastHurt:-99,dead:false,deadAt:0,deathK:0,x:START.x,z:START.z,feet:groundH(START.x,START.z),vy:0,grounded:true,coyote:0,jumpBuf:0,stepOff:0,land:0,yaw:0.06,pitch:-0.02,vx:0,vz:0,bob:0,move:0,stepSide:0,yawVel:0,pitchVel:0};
@@ -6617,7 +6669,7 @@ function loadCode(txt){txt=(txt||'').trim();if(!txt.startsWith('WM1:'))return 'T
 function restoreBackup(){try{const list=JSON.parse(localStorage.getItem('wizard-meadow-backup')||'[]');if(!list.length)return 'No backup yet. One is made every few minutes while you play.';
   localStorage.setItem(SAVEKEY,list[list.length>1?1:0].d);location.reload();return '';}catch(_){return 'Could not read the backup.';}}
 let backupT=120;
-function updatePolish(dt){updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
+function updatePolish(dt){if(AU.ctx&&!SB.ready)sbBuild();updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
 applyComfort();
 /* ── day, night and weather ── */
 // the clock runs 0..1: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset. A whole day takes DAYLEN real seconds.
@@ -6734,6 +6786,7 @@ function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   const gap=(e.lv||1)-SKILL.level;dmg*=lvOut(gap);
   {const CR=CRE[e.base];if(CR&&CR.dmgMod)dmg=CR.dmgMod(e,dmg,o);}
   e.hp-=dmg;
+  if(!quiet&&dmg>e.max*0.15)hitStopAt(e.x,e.z,Math.min(0.08,0.025+0.12*dmg/e.max));
   if(!quiet){e.flash=1;hitMarker();SFX.hit(e.x,e.z);dmgNum(e,dmg,gap>=3?'#8f949b':o&&o.sp!=null&&SPELLS[o.sp]?SPELLS[o.sp].color:'#fff1cc');if(gap>=3&&time-lvWarnT>6){lvWarnT=time;toast(e.T.name+' is level '+e.lv+' · far too strong for you');}e.squash=Math.min(1,(e.squash||0)+0.55+Math.min(0.45,dmg/90));fxFlash(e.x,e.y+(e.T.fly?0:e.T.h*0.6),e.z,0.9+e.T.r,'#fff1cc',0.12);
     const c=e.base==='wisp'?[0.85,0.5,1]:e.base==='golem'?[1,0.8,0.55]:[0.7,1,0.35],cy=e.y+(e.T.fly?0:e.T.h*0.6);
     for(let i=0;i<8;i++){rsphere(_r,fr(2,6));PA.spawn(e.x,cy,e.z,_r.x,_r.y+1.5,_r.z,fr(0.3,0.6),0.16,0.03,c[0],c[1],c[2],1,c[0],c[1]*0.6,c[2]*0.4,8,0.5);}}
@@ -6767,7 +6820,7 @@ function killEnemy(e,quiet){
   if(e.state==='dead')return;e.state='dead';e.t=0;e.bar.bg.visible=e.bar.fill.visible=false;if(e.badge)e.badge.visible=false;
   const cx=e.x,cy=e.y+(e.T.fly?0:e.T.h*0.5),cz=e.z;
   if(quiet){for(let i=0;i<12;i++){rsphere(_r,fr(1,3));PB.spawn(cx,cy,cz,_r.x,_r.y+1,_r.z,fr(1,2),0.6,1.6,0.5,0.48,0.45,0.4,0.6,0.58,0.55,-0.2,1);}return;}
-  COMBAT.kills++;updateHud();onEnemyKilled(e);if(e.T.split&&!e.mini)splitSlime(e);
+  COMBAT.kills++;updateHud();onEnemyKilled(e);{const big=e.elite||e.guardG||e.T.boss;hitStopAt(cx,cz,big?0.25:0.055);shockRing(cx,e.y+0.2,cz,0xe8dcc0,1.6+e.T.r*(e.m.scale||1),0.35);playS('wood',{g:0.35*spat(cx,cz).vol,rate:0.55,pan:spat(cx,cz).pan});if(big){shake(0.6,cx,cz);playS('boom',{g:0.5,rate:0.7,lp:900});}}if(e.T.split&&!e.mini)splitSlime(e);
   if(e.base!=='wisp'&&e.base!=='golem'&&e.type!=='boss'){SFX.pop(cx,cz,'imp');
     for(let i=0;i<26;i++){rsphere(_r,fr(2,7));const g=Math.random();PB.spawn(cx,cy,cz,_r.x,_r.y+2,_r.z,fr(1.2,2.6),0.17,0.1,0.25+g*0.2,0.38+g*0.25,0.12,1,0.2,0.3,0.1,3,0.8,4);}
     for(let i=0;i<6;i++)smoke(cx,cy,cz,0.6,0.4);}
