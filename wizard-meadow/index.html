@@ -611,6 +611,20 @@ body{font-variant-numeric:lining-nums}
 .fi{color:#efe2c2}
 .phead .px,.phead .pp,#lvl,#gold,#hptext,.qq span,#dquest span{font-family:var(--ui)!important;font-variant-numeric:lining-nums}
 #hint{background:none!important;border:0!important;font:italic 500 15px/1.35 var(--ui)!important;color:#f1e6cb!important;text-shadow:0 1px 2px #000,0 0 10px rgba(0,0,0,.7);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+#narr{position:fixed;inset:0;z-index:30;pointer-events:auto;cursor:pointer;opacity:0;transition:opacity .9s ease}
+#narr[hidden]{display:none!important}#narr.on{opacity:1}
+#narr .nr-bar{position:absolute;left:0;right:0;height:11vh;background:#000;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
+#narr .nr-top{top:0;transform:translateY(-100%)}#narr .nr-bot{bottom:0;transform:translateY(100%)}#narr.on .nr-top,#narr.on .nr-bot{transform:none}
+#narr::before{content:'';position:absolute;left:0;right:0;bottom:0;height:46vh;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,0))}
+#narr .nr-text{position:absolute;left:50%;bottom:calc(11vh + 26px);transform:translateX(-50%);width:min(820px,calc(100% - 40px));text-align:center}
+#narr .nr-title{margin:0 0 14px;font:700 15px/1 var(--display);letter-spacing:.32em;text-transform:uppercase;color:#e2c27a;opacity:0;transition:opacity 1.2s ease .2s;text-shadow:0 1px 3px #000}
+#narr .nr-title.in{opacity:1}
+#narr .nr-line{margin:0;font:italic 400 27px/1.45 var(--ui);color:#f3e7c9;text-shadow:0 2px 4px rgba(0,0,0,.9),0 0 24px rgba(0,0,0,.6);opacity:0}
+#narr .nr-line.in{animation:nrIn 1.1s ease forwards}@keyframes nrIn{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
+#narr .nr-skip{position:absolute;right:max(18px,env(safe-area-inset-right,0px));top:calc(11vh + 14px);height:34px;padding:0 14px;background:rgba(0,0,0,.35);border:1px solid rgba(226,194,122,.45);border-radius:2px;color:#e9d8b0;font:600 14px/1 var(--display);letter-spacing:.08em;cursor:pointer}
+#narr .nr-hint{position:absolute;left:0;right:0;bottom:calc(11vh*0.35);margin:0;text-align:center;font:italic 400 13px/1 var(--ui);color:rgba(233,216,176,.6)}
+body.narr #hud,body.narr #status,body.narr #tracker,body.narr #clock,body.narr #mini,body.narr #fairy,body.narr #feed,body.narr #mute,body.narr #bagbtn,body.narr #bookbtn,body.narr #broombtn,body.narr #strike,body.narr #jump,body.narr #joy,body.narr #hint,body.narr #cross,body.narr #story{display:none!important}
+@media (max-width:700px){#narr .nr-line{font-size:21px}#narr .nr-title{font-size:13px}}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Wizard Meadow, a first-person magic sandbox"></canvas>
@@ -676,6 +690,7 @@ body{font-variant-numeric:lining-nums}
       <label class="hm-field"><span class="hm-lab">Music <output id="musout"></output></span><input type="range" id="setmus" min="0" max="100" step="5"></label>
       <div class="hm-field"><span class="hm-lab">Day and night</span><div class="hm-seg" id="cyclerow" role="group" aria-label="Day and night"><button type="button" data-cy="1">Cycle</button><button type="button" data-cy="0">Always day</button></div></div>
       <div class="hm-field"><span class="hm-lab">Weather</span><div class="hm-seg" id="wxrow" role="group" aria-label="Weather"><button type="button" data-wx="1">On</button><button type="button" data-wx="0">Always clear</button></div></div>
+      <div class="hm-field"><span class="hm-lab">Narrator voice</span><div class="hm-seg" id="narrow" role="group" aria-label="Narrator voice"><button type="button" data-nv="1">Spoken</button><button type="button" data-nv="0">Text only</button></div></div>
       <p class="hm-sub">Comfort</p>
       <label class="hm-field"><span class="hm-lab">Screen shake <output id="shakeout"></output></span><input type="range" id="setshake" min="0" max="100" step="10"></label>
       <div class="hm-field"><span class="hm-lab">Text size</span><div class="hm-seg" id="textrow" role="group" aria-label="Text size"><button type="button" data-tx="normal">Normal</button><button type="button" data-tx="large">Large</button><button type="button" data-tx="xl">Extra large</button></div></div>
@@ -714,6 +729,7 @@ body{font-variant-numeric:lining-nums}
 <div id="lvlup" hidden><b></b><span></span></div>
 <div id="combo" hidden><b></b><span></span></div>
 <div id="cfx" hidden></div>
+<div id="narr" hidden role="dialog" aria-live="polite" aria-label="Story"><div class="nr-bar nr-top"></div><div class="nr-bar nr-bot"></div><div class="nr-text"><p class="nr-title"></p><p class="nr-line"></p></div><button type="button" class="nr-skip">Skip</button><p class="nr-hint">Click to continue, Esc to skip</p></div>
 <div id="clock" role="status"><i aria-hidden="true">☀</i><b>08:00</b><span></span></div>
 <div id="ach" hidden role="status"><i aria-hidden="true">★</i><div><small>Achievement unlocked</small><b></b><span></span></div></div>
 <div id="riftbar" hidden><b id="riftwave"></b><span id="riftleft"></span><small id="riftbest"></small></div>
@@ -6517,27 +6533,27 @@ function updateGuardians(dt){
 /* ── the main story: The Rift Beneath Meadowvale ── */
 // each chapter: title, what to do (tracker text), the goal, the card you read when it starts, and when it ends
 const STORY=[
-  {t:'Prologue: The Waking',obj:'Reach level 3',goal:{k:'level',n:3},
-   open:['You wake in the long grass below the Old Tower. Your staff is still warm.','Pip, the tower\'s fairy, is sitting on the rim of the well. "Monsters in the meadow, the old wards gone quiet, and you asleep through all of it. Up you get. Let\'s see what you can do."'],
-   done:['"Better," says Pip, which is high praise, coming from Pip.','"South of here there\'s a hollow where nothing grows. The trouble started there."']},
-  {t:'Chapter One: The Hollow King',obj:'Defeat the Hollow King in Crown Hollow',goal:{k:'king'},
-   open:['Crown Hollow is a scar in the land to the south. A king lived there once. Whatever lives there now still wears his crown.','"He calls for help when he\'s losing," says Pip. "Deal with the help first."'],
-   done:['The king falls and his crown cracks in two. Beneath it the ground glows violet, like a wound that never closed.','Pip is quiet for a long moment. "He wasn\'t the one pulling the strings. Something on the other side of that crack was."','"There were thirteen Wardens once, one for every land. If the Rift has them, we take them back."']},
-  {t:'Chapter Two: The Near Lands',obj:'Free the Wardens of the tundra, the wastes, the desert and the swamp',goal:{k:'guards',ids:['rimefang','pyraxis','sekhmara','mothermire']},
-   open:['Four columns of light stand over the near lands: the tundra to the north, the wastes to the east, the desert to the south, the swamp to the west.','"Every Warden has a weakness, and it\'s written on its health bar," says Pip. "If one hides behind a shield, hit it with two schools of magic, one straight after the other."'],
-   done:['The fourth Warden falls and its light rises to join the others. Somewhere under Crown Hollow, something flinches.','"Good. The far lands next. They won\'t be as forgiving."']},
-  {t:'Chapter Three: The Far Lands',obj:'Free the Wardens of the peaks, the canyon, the wilds and the Gloamwood',goal:{k:'guards',ids:['prismwarden','kharr','thornwood','bonetyrant']},
-   open:['Past the near lands lie the Prism Peaks, Redrock Canyon, the Verdant Wilds and the Gloamwood.','"Use the land," says Pip. "Burn the grass. Freeze the lakes. Put lightning in the water."'],
-   done:['Eight lights circle the sky. The glow in Crown Hollow has dimmed, but it pulses, slow and angry.','"It\'s dragging the last of them to the edge of the world."']},
-  {t:'Chapter Four: The Edge of the World',obj:'Free the Wardens of Skyreach, the caldera, the coast and the Fungal Deep',goal:{k:'guards',ids:['stormbeak','ashmaw','kragmaw','sporemother']},
-   open:['The outer lands: the wind-scoured Skyreach Highlands, the smoking Obsidian Caldera, the Coral Coast and the Fungal Deep.','"Bring the broom," says Pip. "And more potions than you think you\'ll need."'],
-   done:['Twelve lights now. One Warden is still missing, and it isn\'t on the ground.','"Aeloria," Pip says. "The island above the clouds. Even there."']},
-  {t:'Chapter Five: The Island in the Clouds',obj:'Fly to Aeloria and free the Tempest Seraph',goal:{k:'guards',ids:['seraph']},
-   open:['Aeloria floats high above the southern sea, a marble palace on an island of cloud. Only a broom will get you there.','"Queen Seraphine will help if she can," says Pip. "But that storm around her island isn\'t weather."'],
-   done:['The Tempest Seraph comes apart and the storm goes with it. Sunlight falls on Aeloria for the first time in years.','Queen Seraphine finds you among the clouds. "Thirteen Wardens. My whole court could not free one. But the Rift is still open, and it will send everything it has left. Close it."']},
-  {t:'The Last Chapter: The Rift',obj:'Enter the Rift from the main menu and hold out for 10 waves',goal:{k:'rift',n:10},
-   open:['The Rift has torn wide open in the Sunscorch Desert: a ring of violet crystal around a hole in the sky.','"Everything it has left will come through there," says Pip. "Hold long enough and the Wardens can seal it behind you." Choose The Rift from the main menu when you\'re ready.'],
-   done:['On the tenth wave, thirteen lights fall out of the sky and close around the Rift. It shrinks to a point, flickers, and is gone.','Grass is already creeping back over Crown Hollow.','"Not bad," says Pip, "for someone who slept through the start of it."','The End. New Game+ is waiting on the main menu, and the Rift is still there if you want more.']}
+  {t:'The Waking',obj:'Reach level 3',goal:{k:'level',n:3},
+   open:['Long ago, the wards of Meadowvale kept the dark out.','Then, one by one, they went quiet.','Beneath the Old Tower, a young wizard slept through all of it.','Until a fairy named Pip decided that was enough sleeping.'],
+   done:['The young wizard learned quickly. Fire came easily, and the imps learned to keep their distance.','But to the south lay a hollow where nothing grew, and something waited there, wearing a crown.']},
+  {t:'The Hollow King',obj:'Defeat the Hollow King in Crown Hollow',goal:{k:'king'},
+   open:['Crown Hollow had been a palace once. Now it was a scar in the earth.','Its king had been dead a hundred years. He had not noticed.'],
+   done:['The Hollow King fell, and his crown split in two.','Beneath it the ground glowed violet, like a wound that had never closed.','He had only ever been a puppet. Something on the other side of that crack held the strings.','Thirteen Wardens had once guarded the thirteen lands. Now the Rift held every one of them.']},
+  {t:'The Near Lands',obj:'Free the Wardens of the tundra, the wastes, the desert and the swamp',goal:{k:'guards',ids:['rimefang','pyraxis','sekhmara','mothermire']},
+   open:['Four columns of light rose over the near lands: the frozen north, the burning east, the desert south and the drowning west.','Each one was a Warden, twisted and waiting.','Pip had advice, as Pip always did: every Warden wears its weakness on its health bar, and a shield breaks under two schools of magic, one straight after the other.'],
+   done:['When the fourth Warden fell, its light rose to join the others.','Far below Crown Hollow, something flinched.']},
+  {t:'The Far Lands',obj:'Free the Wardens of the peaks, the canyon, the wilds and the Gloamwood',goal:{k:'guards',ids:['prismwarden','kharr','thornwood','bonetyrant']},
+   open:['Beyond the near lands lay the far ones: the singing peaks, the red canyon, the green wilds and the grey Gloamwood.','There the wizard learned to fight with the land itself. Fire in the grass. Ice on the lakes. Lightning in the water.'],
+   done:['Eight lights now circled the sky.','The glow beneath the Hollow pulsed slower, and angrier.']},
+  {t:'The Edge of the World',obj:'Free the Wardens of Skyreach, the caldera, the coast and the Fungal Deep',goal:{k:'guards',ids:['stormbeak','ashmaw','kragmaw','sporemother']},
+   open:['At the edge of the world the lands grew strange: windswept highlands, a smoking caldera, a coast of coral and a forest of glowing mushrooms.','The wizard went by broom, with more potions than seemed sensible.'],
+   done:['Twelve Wardens were free.','The thirteenth was not on the ground at all.']},
+  {t:'The Island in the Clouds',obj:'Fly to Aeloria and free the Tempest Seraph',goal:{k:'guards',ids:['seraph']},
+   open:['High above the southern sea floated Aeloria, a marble palace on an island of cloud.','A storm had wrapped itself around it, and it was not weather.'],
+   done:['The Tempest Seraph broke apart, and the storm went with it.','Sunlight touched Aeloria for the first time in years.','"Thirteen Wardens," said Queen Seraphine. "My whole court could not free one. Now close the Rift."']},
+  {t:'The Rift',obj:'Enter the Rift from the main menu and hold out for 10 waves',goal:{k:'rift',n:10},
+   open:['In the Sunscorch Desert, the Rift tore wide open: a ring of violet crystal around a hole in the sky.','Everything it had left would come through. The wizard only had to hold.','(Choose The Rift from the main menu when you are ready.)'],
+   done:['On the tenth wave, thirteen lights fell from the sky and closed around the Rift.','It shrank to a point, flickered, and was gone.','By spring, the grass had grown back over Crown Hollow.','And the wizard who had slept through the beginning was the one everyone remembered at the end.','The End.']}
 ];
 const STC={queue:[],open:false};
 function storyStep(){return SKILL.story==null?0:SKILL.story;}
@@ -6547,11 +6563,31 @@ function storyMet(ch){const g=ch.goal;
   if(g.k==='guards')return g.ids.every(id=>(SKILL.guards||[]).includes(id));if(g.k==='rift')return (SKILL.riftMax||0)>=g.n;return false;}
 function storyProgress(ch){const g=ch.goal;if(g.k==='guards'){const n=g.ids.filter(id=>(SKILL.guards||[]).includes(id)).length;return n+' / '+g.ids.length;}
   if(g.k==='level')return 'Level '+SKILL.level+' / '+g.n;if(g.k==='rift')return 'Best wave '+(SKILL.riftMax||0)+' / '+g.n;return '';}
+/* ── the narrator: the story is told, line by line, over a slow drift of the camera ── */
+const NARR={lines:[],i:-1,title:'',t:0,lineT:0,speaking:false,voice:null,el:null,started:0};
+function narrVoice(){if(NARR.voice!==null)return NARR.voice;const S=window.speechSynthesis;if(!S)return NARR.voice=false;const vs=S.getVoices().filter(v=>/^en/i.test(v.lang));if(!vs.length)return null;
+  const pref=[/natural/i,/neural/i,/Daniel/,/Arthur/,/George/,/Google UK English Male/,/Serena/,/Moira/,/Karen/,/Google UK/,/Samantha/,/Alex/];let best=null;for(const r of pref){best=vs.find(v=>r.test(v.name));if(best)break;}
+  return NARR.voice=best||vs[0];}
+if(window.speechSynthesis)window.speechSynthesis.onvoiceschanged=()=>{NARR.voice=null;};
+function narrSay(text){if(SET.narrate===false||!AU.on||!window.speechSynthesis)return false;const v=narrVoice();if(v===false)return false;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(text.replace(/^\(|\)$/g,''));if(v)u.voice=v;u.rate=0.9;u.pitch=0.92;u.volume=Math.min(1,0.9*SET.vol+0.1);
+    u.onend=()=>{NARR.speaking=false;NARR.lineT=Math.min(NARR.lineT,0.9);};NARR.speaking=true;speechSynthesis.speak(u);return true;}catch(_){return false;}}
+function narrShow(){const el=$('narr'),L=NARR.lines[NARR.i];const p=el.querySelector('.nr-line');p.classList.remove('in');void p.offsetWidth;p.textContent=L;p.classList.add('in');
+  el.querySelector('.nr-title').textContent=NARR.i===0?NARR.title:'';el.querySelector('.nr-title').classList.toggle('in',NARR.i===0&&!!NARR.title);
+  const spoke=narrSay(L);NARR.lineT=spoke?(3+L.length*0.075)*1.6:2.6+L.length*0.055;}
 function storyCard(title,lines,btn){STC.queue.push([title,lines,btn]);if(!STC.open)storyNext();}
-function storyNext(){const it=STC.queue.shift();const el=$('story');if(!it){STC.open=false;el.hidden=true;victoryOpen=false;updatePause();if(!homeOpen&&!touchMode&&!lockFailed)requestLock();return;}
-  STC.open=true;victoryOpen=true;el.querySelector('h2').textContent=it[0];const b=el.querySelector('.st-body');b.innerHTML='';
-  for(const t of it[1]){const p=document.createElement('p');p.textContent=t;b.appendChild(p);}
-  $('stgo').textContent=it[2]||'Continue';el.hidden=false;if(document.pointerLockElement)try{document.exitPointerLock();}catch(_){}updatePause();setTimeout(()=>{try{$('stgo').focus({preventScroll:true});}catch(_){}},50);}
+function storyNext(){
+  // the next line of the current telling, or the next telling, or back to the game
+  if(STC.open&&NARR.i>=0&&NARR.i<NARR.lines.length-1){NARR.i++;narrShow();return;}
+  const it=STC.queue.shift(),el=$('narr');
+  if(!it){STC.open=false;el.hidden=true;el.classList.remove('on');document.body.classList.remove('narr');try{speechSynthesis.cancel();}catch(_){}NARR.i=-1;victoryOpen=false;updatePause();if(!homeOpen&&!touchMode&&!lockFailed&&!GP.on)requestLock();return;}
+  STC.open=true;victoryOpen=true;NARR.title=it[0];NARR.lines=it[1];NARR.i=0;NARR.started=performance.now();
+  el.hidden=false;document.body.classList.add('narr');requestAnimationFrame(()=>el.classList.add('on'));if(document.pointerLockElement)try{document.exitPointerLock();}catch(_){}updatePause();narrShow();}
+function narrSkip(){STC.queue.length=0;NARR.i=NARR.lines.length;storyNext();}
+function updateNarr(rdt){if(!STC.open)return;NARR.t+=rdt;NARR.lineT-=rdt;if(NARR.lineT<=0)storyNext();}
+// a slow, drifting camera while the story is told
+function narrCam(){const t=(performance.now()-NARR.started)/1000;camera.position.y+=1.1+Math.min(1.5,t*0.08);camera.rotation.set(-0.05+Math.sin(t*0.13)*0.02,player.yaw+0.35+t*0.025+Math.sin(t*0.07)*0.2,0);}
+window.addEventListener('keydown',e=>{if(!STC.open)return;if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();narrSkip();}else if(e.code==='Enter'||e.code==='Space'){e.preventDefault();e.stopImmediatePropagation();storyNext();}},true);
 let storyT=0;
 function storyWaypoint(ch){const g=ch.goal;let t=null;if(g.k==='king')t=CROWN;else if(g.k==='guards'){if(!GD.init)return;let bd=1e9;for(const G of GUARDS){if(!g.ids.includes(G.id)||G.beaten)continue;const d=Math.hypot(G.x-player.x,G.z-player.z);if(d<bd){bd=d;t=G;}}}else if(g.k==='rift')t=RIFT;
   if(t){waypoint={x:t.x,z:t.z};feed('Waypoint set: '+(t.name||'the Rift')+' (M opens the map)','#ffd98a');}}
@@ -6687,7 +6723,7 @@ function loadCode(txt){txt=(txt||'').trim();if(!txt.startsWith('WM1:'))return 'T
 function restoreBackup(){try{const list=JSON.parse(localStorage.getItem('wizard-meadow-backup')||'[]');if(!list.length)return 'No backup yet. One is made every few minutes while you play.';
   localStorage.setItem(SAVEKEY,list[list.length>1?1:0].d);location.reload();return '';}catch(_){return 'Could not read the backup.';}}
 let backupT=120;
-function updatePolish(dt){updateLife(dt);if(AU.ctx&&!SB.ready)sbBuild();updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
+function updatePolish(dt){updateNarr(dt);updateLife(dt);if(AU.ctx&&!SB.ready)sbBuild();updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
 applyComfort();
 /* ── day, night and weather ── */
 // the clock runs 0..1: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset. A whole day takes DAYLEN real seconds.
@@ -7150,7 +7186,8 @@ $('setsens').addEventListener('input',e=>{SET.sens=+e.target.value/100;saveSet()
 $('setinv').addEventListener('change',e=>{SET.invY=e.target.checked;saveSet();});
 function syncComfortUI(){const m=SET.music==null?0.5:SET.music,sh=shakeMul();$('setmus').value=Math.round(m*100);$('musout').textContent=Math.round(m*100)+'%';$('setshake').value=Math.round(sh*100);$('shakeout').textContent=Math.round(sh*100)+'%';
   for(const b of document.querySelectorAll('#textrow [data-tx]'))b.setAttribute('aria-pressed',String(b.dataset.tx===(SET.text||'normal')));for(const b of document.querySelectorAll('#flashrow [data-fl]'))b.setAttribute('aria-pressed',String((b.dataset.fl==='1')===(SET.flash!==false)));
-  $('setcontrast').checked=!!SET.contrast;renderBinds();for(const b of document.querySelectorAll('#cyclerow [data-cy]'))b.setAttribute('aria-pressed',String((b.dataset.cy==='1')===(SET.cycle!==false)));for(const b of document.querySelectorAll('#wxrow [data-wx]'))b.setAttribute('aria-pressed',String((b.dataset.wx==='1')===(SET.weather!==false)));}
+  $('setcontrast').checked=!!SET.contrast;renderBinds();for(const b of document.querySelectorAll('#cyclerow [data-cy]'))b.setAttribute('aria-pressed',String((b.dataset.cy==='1')===(SET.cycle!==false)));for(const b of document.querySelectorAll('#wxrow [data-wx]'))b.setAttribute('aria-pressed',String((b.dataset.wx==='1')===(SET.weather!==false)));for(const b of document.querySelectorAll('#narrow [data-nv]'))b.setAttribute('aria-pressed',String((b.dataset.nv==='1')===(SET.narrate!==false)));}
+for(const b of document.querySelectorAll('#narrow [data-nv]'))b.addEventListener('click',()=>{SET.narrate=b.dataset.nv==='1';saveSet();for(const q of document.querySelectorAll('#narrow [data-nv]'))q.setAttribute('aria-pressed',String((q.dataset.nv==='1')===(SET.narrate!==false)));});
 for(const b of document.querySelectorAll('#cyclerow [data-cy]'))b.addEventListener('click',()=>{SET.cycle=b.dataset.cy==='1';saveSet();syncComfortUI();});
 for(const b of document.querySelectorAll('#wxrow [data-wx]'))b.addEventListener('click',()=>{SET.weather=b.dataset.wx==='1';if(!SET.weather){WX.next='clear';}saveSet();syncComfortUI();});
 $('setmus').addEventListener('input',e=>{SET.music=+e.target.value/100;saveSet();$('musout').textContent=e.target.value+'%';});
@@ -7163,6 +7200,8 @@ $('savecopy').addEventListener('click',()=>{const c=saveCode(),t=$('savecode');t
 $('saveload').addEventListener('click',()=>{const m=loadCode($('savecode').value);if(m)$('savemsg').textContent=m;});
 $('saverest').addEventListener('click',()=>{const m=restoreBackup();if(m)$('savemsg').textContent=m;});
 $('stgo').addEventListener('click',()=>storyNext());
+$('narr').addEventListener('click',e=>{if(e.target.closest('.nr-skip'))narrSkip();else storyNext();});
+if(COARSE)$('narr').querySelector('.nr-hint').textContent='Tap to continue';
 for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.addEventListener('click',()=>{SET.fairy=b.dataset.fy==='1';saveSet();syncSettingsUI();});
 
 for(const b of document.querySelectorAll('#gfxrow [data-gfx]')){b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
@@ -8769,7 +8808,7 @@ function frame(now){
   treeGust*=Math.exp(-dt*1.4);U.uTreeGust.value=treeGust;
   mill.boost*=Math.exp(-dt*0.45);mill.sails.rotation.z-=dt*(mill.spin+mill.boost);
   for(const c of clouds){c.position.x+=(homeOpen?Math.min(0.05,raw):dt)*1.6;if(c.position.x>2600)c.position.x=-2600;}
-  updateCamera(dt);if(homeOpen)homeCam();updateStaff(dt);updateCulling(dt);
+  updateCamera(dt);if(homeOpen)homeCam();else if(STC.open)narrCam();updateStaff(dt);updateCulling(dt);
   U.uTime.value=homeOpen?time+performance.now()/1000:time;U.uCam.value.copy(camBase);
   sky.position.copy(camera.position);
   { // keep the shadow frustum centred on the player, snapped to texels to avoid shimmer
@@ -8782,7 +8821,7 @@ function frame(now){
     if(frameN%2===0){const h=aim(locked?VW/2:hoverX,locked?VH/2:hoverY),s=SPELLS[selected];reticle.position.set(h.x,(h.piece>=0?h.y:h.gy)+0.12,h.z);reticle.scale.setScalar(s.r*0.5*(selected===0?fireScale()*1.4:1));reticle.material.color.copy(s.lin);reticle.rotation.y=time*0.6;}
     reticle.visible=cooldown<=0.05&&CD[selected]<=0.05;
   }else reticle.visible=false;
-  renderer.clear();renderer.render(scene,camera);if(!homeOpen){renderer.clearDepth();renderer.render(staffScene,camera);}
+  renderer.clear();renderer.render(scene,camera);if(!homeOpen&&!STC.open){renderer.clearDepth();renderer.render(staffScene,camera);}
   if((mapDirty||awake.length>0||voidBusy||tornadoBusy)&&time>=nextMapBuild){if(groundDirty){rebuildGround();groundDirty=false;}rebuildMap();mapDirty=false;nextMapBuild=time+0.35;}
   if(frameN%2===0)drawMini();
   // drop resolution a little if the device is struggling
