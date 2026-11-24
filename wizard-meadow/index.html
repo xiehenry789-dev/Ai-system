@@ -1,6 +1,6 @@
 <title>Wizard Meadow</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Alegreya:ital,wght@0,400;0,500;0,700;1,400;1,500&family=Alegreya+SC:wght@500;700&display=swap">
 <style>
 /* Layout: one full-screen 3D canvas; a thin HUD floats over it (spell bar top centre, hints bottom). */
 :root{
@@ -537,6 +537,79 @@ body.touch #riftbar{max-width:calc(100% - 190px);white-space:nowrap;gap:8px;padd
 #dmg i{position:absolute;left:0;top:0;font:800 19px/1 var(--ui);font-style:normal;white-space:nowrap;text-shadow:0 2px 0 rgba(0,0,0,.6),0 0 10px rgba(0,0,0,.35);will-change:transform,opacity;opacity:0}
 #dmg i.big{font-size:27px}
 @media (prefers-reduced-motion:reduce){.bk-motes,.bk-stage::before,.pg.spl .art::after,.pg .bkb.go,.pg .stbar::after{animation:none!important}#book.opened .bk-cover{animation-duration:.01s}}
+
+/* ── house style: ink on parchment for anything you read, plain inked lettering over the world ── */
+:root{--ui:'Alegreya','Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;--display:'Alegreya SC','IM Fell English SC','Palatino Linotype',Georgia,serif;
+  --gold:#e2c27a;--parch-ink:#2b1f14;--parch-soft:#5f4a33;--rule:#3b2a1a;--wax:#8c2f22;--brass:#b8914a;
+  --parch-bg:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 .32 0 0 0 0 .22 0 0 0 0 .1 0 0 0 .2 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),radial-gradient(ellipse at 50% 35%,#f1e6cb 0%,#e2d1aa 70%,#cdb383 100%)}
+.card,.pcard,#fairy,.hm-pane,#ach,#story .card,.st-card{--text:var(--parch-ink);--muted:var(--parch-soft);--gold:var(--wax);--line:rgba(59,42,26,.35);
+  background:var(--parch-bg)!important;color:var(--parch-ink)!important;border:1px solid var(--rule)!important;border-radius:3px!important;outline:1px solid rgba(59,42,26,.55);outline-offset:-7px;
+  box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 18px 50px rgba(0,0,0,.55)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.card h1,.card h2,.pcard h2,.hm-pane h2,#story h2,.dcard h2{font-family:var(--display)!important;color:var(--wax)!important;text-shadow:none!important;letter-spacing:.04em;font-weight:700}
+.card p,.hm-pane p,.st-body p,#fytext{font-family:var(--ui)!important;color:var(--parch-ink)!important;text-shadow:none}
+.st-body p{font-size:17px!important;line-height:1.55!important}.st-kick{color:var(--parch-soft)!important;font-family:var(--display)!important}
+.mbtn{border-radius:2px!important;background:#3b2a1a!important;border:1px solid #20150c!important;color:#f1e6cb!important;font:700 14px/1 var(--display)!important;letter-spacing:.06em;box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 2px 0 rgba(0,0,0,.35)}
+.mbtn.primary,.mbtn.on{background:var(--wax)!important;border-color:#5a1a12!important;color:#f8ecd2!important}
+.mbtn:hover{filter:brightness(1.12)}.mbtn.hm-danger{background:#6a1a14!important}
+.ptabs{border-bottom:1px solid rgba(59,42,26,.35)!important}.ptab{font-family:var(--display)!important;color:var(--parch-soft)!important;border-radius:2px!important}
+.ptab.on{background:rgba(140,47,34,.12)!important;border-color:rgba(140,47,34,.45)!important;color:var(--wax)!important}
+.ptab kbd,.hm-btn kbd{font-family:var(--ui);color:inherit;opacity:.7}
+#pbody{color:var(--parch-ink)!important;font-family:var(--ui)!important;font-size:15px!important}
+.phead .pl{color:var(--wax)!important;font-family:var(--display)!important}.phead .pg{color:#7a5a10!important}.phead .pp{background:rgba(59,42,26,.12)!important;color:var(--parch-ink)!important;border-radius:2px!important}
+.it,.sp,.qq,.ach-item,#dquest{background:rgba(255,250,235,.38)!important;border:1px solid rgba(59,42,26,.28)!important;border-radius:2px!important}
+.it b,.sp b,.qq b,#dquest b,.ach-item b{font-family:var(--display)!important;color:var(--parch-ink)!important;font-size:15px!important}
+.it p,.sp p,.qq p,#dquest p,.ach-item small{color:var(--parch-soft)!important;font-size:14px!important}
+.qq span,#dquest span{color:var(--wax)!important;font-family:var(--ui)!important;font-style:italic;font-weight:500!important}
+.it img,.sp img{background:rgba(59,42,26,.15)!important;border-radius:2px!important}
+.rk i{border-color:var(--wax)!important}.rk i.on{background:var(--wax)!important}
+.ach-item.on{background:rgba(184,145,74,.22)!important;border-color:rgba(140,47,34,.5)!important}.ach-item i{color:var(--wax)!important}
+#ach i{color:var(--wax)!important}#ach small{color:var(--wax)!important;font-family:var(--display)!important}#ach b{color:var(--parch-ink)!important}#ach span{color:var(--parch-soft)!important}
+.fy-head{color:var(--wax)!important;font-family:var(--display)!important;font-size:15px!important}.fy-head span,.fy-foot{color:var(--parch-soft)!important}
+#fytext{font-size:16px!important}
+/* the main menu: lettering on the scene, choices on parchment slips */
+.hm-title{font-family:'IM Fell English SC',var(--display)!important;color:#f1e6cb!important;text-shadow:0 2px 0 rgba(0,0,0,.4),0 6px 30px rgba(0,0,0,.6)!important;letter-spacing:.02em}
+.hm-title span{color:#e2c27a!important}.hm-kicker,.hm-foot{display:none!important}
+.hm-btn{background:var(--parch-bg)!important;color:var(--parch-ink)!important;border:1px solid var(--rule)!important;border-radius:2px!important;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.hm-btn b{font-family:var(--display)!important;font-size:19px!important;color:var(--parch-ink)!important}.hm-btn small{font-family:var(--ui)!important;font-size:14px!important;color:var(--parch-soft)!important;font-style:italic}
+.hm-btn.hm-primary{background:linear-gradient(rgba(140,47,34,.9),rgba(110,32,22,.92)),var(--parch-bg)!important;border-color:#4a120c!important}.hm-btn.hm-primary b,.hm-btn.hm-primary small{color:#f8ecd2!important}
+.hm-btn:hover{transform:translateX(3px)}.hm-seg{border-color:var(--rule)!important;border-radius:2px!important}.hm-seg button{font-family:var(--display)!important;color:var(--parch-ink)!important}
+.hm-seg button[aria-pressed="true"]{background:var(--wax)!important;color:#f8ecd2!important}.hm-lab,.hm-sub,.hm-note,.hm-check{color:var(--parch-soft)!important;font-family:var(--ui)!important}
+.hm-sub{color:var(--wax)!important;font-family:var(--display)!important}
+.bind-key{background:#3b2a1a!important;color:#f1e6cb!important;border-radius:2px!important;font-family:var(--display)!important}.bind-row{color:var(--parch-ink)!important}
+#savecode{background:rgba(255,250,235,.5)!important;color:var(--parch-ink)!important;border:1px solid rgba(59,42,26,.35)!important;border-radius:2px!important}#savemsg{color:var(--wax)!important}
+input[type=range]{accent-color:var(--wax)}
+/* over the world: no boxes, just lettering with a dark ink shadow */
+#tracker{gap:8px!important}#tracker h3{display:none}
+.tq{background:none!important;border:0!important;padding:0!important;text-align:right;align-items:flex-end}
+.tq b{font:700 15px/1.2 var(--display)!important;color:#f3e7c9!important;text-shadow:0 1px 2px rgba(0,0,0,.9),0 0 10px rgba(0,0,0,.55)}
+.tq span{font:italic 500 14px/1.25 var(--ui)!important;color:#e9d8b0!important;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 8px rgba(0,0,0,.6)}
+.tq.tmain b{color:#f0c878!important}
+.fi{background:none!important;border:0!important;padding:1px 0!important;font:italic 500 15px/1.3 var(--ui)!important;text-shadow:0 1px 2px rgba(0,0,0,.95),0 0 10px rgba(0,0,0,.6)}
+#wave{background:none!important;border:0!important;padding:0!important;font:italic 500 14px/1.2 var(--ui)!important;color:#e9d8b0!important;text-shadow:0 1px 2px #000}#wave:empty{display:none}
+#hp{border-radius:2px!important;background:#1a120c!important;border:1px solid #6a5232!important;box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+#hpfill{background:linear-gradient(#c0392b,#7a1a12)!important;border-radius:0!important}
+#hptext{font:700 12px/18px var(--display)!important;color:#f8ecd2!important}
+#lvl,#gold{font-family:var(--display)!important;text-shadow:0 1px 2px #000}
+#xpbar{border-radius:1px!important;background:rgba(26,18,12,.8)!important;border:1px solid rgba(106,82,50,.8)!important}
+#clock{background:none!important;border:0!important;padding:0!important;gap:5px!important}
+#clock i{font-style:normal;font-size:16px!important;color:#f3e7c9;text-shadow:0 1px 2px #000;font-family:'Segoe UI Symbol','Noto Sans Symbols 2','DejaVu Sans',sans-serif}
+#clock b{font:700 15px/1 var(--display)!important;color:#f3e7c9!important;text-shadow:0 1px 2px #000,0 0 8px rgba(0,0,0,.6)}
+#clock span{font:italic 500 14px/1 var(--ui)!important;color:#e9d8b0!important;text-shadow:0 1px 2px #000}
+#spellname,#combo b,#lvlup b{font-family:var(--display)!important}
+#lvlup span,#combo span{font-family:var(--ui)!important;font-style:italic;letter-spacing:.04em!important;text-transform:none!important}
+#bar{background:rgba(26,18,12,.55)!important;border:1px solid rgba(106,82,50,.7)!important;border-radius:3px!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.slot{border-radius:2px!important;border-color:rgba(106,82,50,.8)!important;background:rgba(26,18,12,.6)!important}
+#bossbar .bname{font-family:var(--display)!important;letter-spacing:.08em}
+#riftbar{background:rgba(26,18,12,.75)!important;border:1px solid rgba(106,82,50,.8)!important;border-radius:2px!important}#riftbar b,#riftbar span,#riftbar small{font-family:var(--display)!important}
+body.touch #bagbtn,body.touch #bookbtn,body.touch #broombtn{border-radius:2px!important;font-family:var(--display)!important}
+#mute{border-radius:2px!important}
+#pause .psub{color:var(--parch-soft)!important}
+body{font-variant-numeric:lining-nums}
+#tracker{background:radial-gradient(ellipse at 100% 30%,rgba(12,9,6,.5),rgba(12,9,6,0) 72%);padding:10px 4px 16px 40px;border-radius:0}
+.tq b{font:700 16px/1.2 var(--ui)!important;letter-spacing:.01em}
+.tq span{font-size:14.5px!important}
+.fi{color:#efe2c2}
+#hint{background:none!important;border:0!important;font:italic 500 15px/1.35 var(--ui)!important;color:#f1e6cb!important;text-shadow:0 1px 2px #000,0 0 10px rgba(0,0,0,.7);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Wizard Meadow, a first-person magic sandbox"></canvas>
@@ -3614,19 +3687,19 @@ const FAIRY={g:null,wings:[],glow:null,x:0,y:0,z:0,init:false,arrive:0};
 })();
 const TS={look:0,walk:0,ev:{},lyaw:0,lx:0,lz:0,t:0,shown:-1,sawBook:false,guide:null};
 const TUT=[
-  {say:()=>"You're awake at last! I'm Pip, your fairy. You have a wizard's staff and no idea how to use it, so let me show you.",auto:7},
-  {say:()=>touchMode?'Drag on the right side of the screen to look around.':'Move your mouse to look around.',done:()=>TS.look>2.4},
-  {say:()=>touchMode?'Use the stick at the bottom left to walk.':'Walk with W A S D. Hold Shift to run.',done:()=>TS.walk>8},
-  {say:()=>touchMode?'Tap the arrow button to jump.':'Press Space to jump. Go on, hop!',done:()=>TS.ev.jump},
-  {say:()=>touchMode?'Now some magic! Tap the world to throw your fireball.':'Now some magic! Right-click to throw your fireball. That old ruin looks like a good target.',done:()=>(TS.ev.cast||0)>=2},
-  {say:()=>touchMode?'Too close for spells? Tap the staff button to give things a whack.':'Too close for spells? Left-click, or press F, to swing your staff.',done:()=>TS.ev.strike},
-  {say:()=>'See the glowing plants? New spells are made from them. Walk into one to pick it up. Follow me!',done:()=>TS.ev.gather,guide:true},
-  {say:()=>touchMode?'Now open your spellbook with the book button.':'Now press K to open your spellbook.',done:()=>bookOpen},
-  {say:()=>'Each page is a spell. When you have everything it asks for, press Study to learn it. Close the book when you are ready.',done:()=>TS.sawBook&&!bookOpen},
-  {say:()=>touchMode?'Spells you learn go in your bar at the top. Tap one to choose it.':'Spells you learn go in your bar at the top. Press 1 to 5, or roll the mouse wheel, to choose one.',auto:8},
-  {say:()=>touchMode?'Your quests are in the bag menu. Elders in the villages give you more.':'Press J to see your quests. Elders in the villages give you more.',done:()=>panelOpen&&(touchMode||panelTab==='quests')},
-  {say:()=>touchMode?'Tap the little map to open the big one.':'Press M to open the map. Touch a glowing waystone and you can travel back to it from there.',done:()=>TS.ev.map||mapOpen},
-  {say:()=>'Beat monsters to catch their glowing XP orbs and level up. Stay away from anything with a red skull: it is far stronger than you. I will stay close. Off you go!',auto:10}
+  {say:()=>"Right. Staff, wizard, meadow full of monsters. Let's start with the basics.",auto:6},
+  {say:()=>touchMode?'Drag on the right side of the screen to look around.':'Move the mouse to look around.',done:()=>TS.look>2.4},
+  {say:()=>touchMode?'The stick at the bottom left walks.':'W A S D to walk. Hold Shift to run.',done:()=>TS.walk>8},
+  {say:()=>touchMode?'The arrow button jumps.':'Space to jump.',done:()=>TS.ev.jump},
+  {say:()=>touchMode?'Now tap the world to throw a fireball. That ruin won\'t mind.':'Right-click to throw a fireball. That ruin won\'t mind.',done:()=>(TS.ev.cast||0)>=2},
+  {say:()=>touchMode?'Too close for spells? The staff button gives things a whack.':'Too close for spells? Left-click or F to swing the staff.',done:()=>TS.ev.strike},
+  {say:()=>'The glowing plants are what new spells are made from. Walk through one to pick it. This way.',done:()=>TS.ev.gather,guide:true},
+  {say:()=>touchMode?'Open your spellbook with the book button.':'K opens your spellbook.',done:()=>bookOpen},
+  {say:()=>'One spell to a page. Once you have what a page asks for, press Study. Close the book when you\'re done.',done:()=>TS.sawBook&&!bookOpen},
+  {say:()=>touchMode?'Learned spells go in the bar at the top. Tap one to pick it.':'Learned spells go in the bar at the top. 1 to 5, or the mouse wheel, to pick one.',auto:8},
+  {say:()=>touchMode?'Your quests are in the bag. Village elders hand out more.':'J shows your quests. Village elders hand out more.',done:()=>panelOpen&&(touchMode||panelTab==='quests')},
+  {say:()=>touchMode?'Tap the little map for the big one.':'M opens the map. Touch a waystone once and you can travel back to it from there.',done:()=>TS.ev.map||mapOpen},
+  {say:()=>'Monsters drop light when they die; catch it to grow stronger. Anything with a red skull over its head is out of your league for now. Go on.',auto:10}
 ];
 function tutEv(k){TS.ev[k]=(TS.ev[k]||0)+1;}
 function tutActive(){return SKILL.tut<TUT.length&&!homeOpen&&!player.dead;}
@@ -6317,7 +6390,7 @@ function updateGuardianAI(e,dt){
 function updateGuardians(dt){
   if(!GD.init)guardInit();
   for(const G of GUARDS){
-    G.circ.rotation.y+=dt*0.15;
+    G.circ.rotation.y+=dt*0.15;{const d0=Math.hypot(player.x-G.x,player.z-G.z);G.beam.visible=!G.beaten&&d0<380&&G.sky===SKYCTX;G.beam.material.opacity=0.2*Math.max(0,1-d0/380);}
     if(G.beaten){if(G.e&&G.e.state!=='dead'){G.e.despawn=true;G.e=null;}continue;}
     const d=Math.hypot(player.x-G.x,player.z-G.z),here=G.sky===SKYCTX;
     if(!G.e){if(COMBAT.on&&here&&d<120&&!(typeof RIFT!=='undefined'&&RIFT.on))guardSpawn(G);continue;}
@@ -6339,28 +6412,27 @@ function updateGuardians(dt){
 /* ── the main story: The Rift Beneath Meadowvale ── */
 // each chapter: title, what to do (tracker text), the goal, the card you read when it starts, and when it ends
 const STORY=[
-  {t:'Prologue · The Waking',obj:'Reach level 3',goal:{k:'level',n:3},
-   open:['You wake in the tall grass beside the Old Tower, your staff warm in your hand.','A tiny voice: "Finally! I am Pip. Something is wrong with Meadowvale. The monsters have grown bold, and the old magic feels… torn. First, let us make a wizard of you."'],
-   done:['Pip spins in a delighted circle. "You are getting the hang of this!"','"The elders speak of a crowned shadow in the hollow to the south. Everything twisted started there."']},
-  {t:'Chapter I · The Hollow King',obj:'Defeat the Hollow King in Crown Hollow',goal:{k:'king'},
-   open:['Crown Hollow lies to the south, a crater where nothing grows.','"They say he was a king once," Pip whispers. "Now he is only hollow armour and hunger. Be ready: when he grows angry, he calls for help."'],
-   done:['The Hollow King falls, and his crown splits in two. Beneath it, the ground glows violet: a crack in the world itself.','Pip goes very still. "He was not the master. He was a puppet. Something is pulling at our world from the other side, a Rift. And it has its hooks in the Wardens."',
-     '"Long ago thirteen great beasts guarded the thirteen lands. The Rift has twisted them. Free them, and the Rift loses its grip."']},
-  {t:'Chapter II · Wardens of the Near Lands',obj:'Free the Wardens of the Tundra, the Wastes, the Desert and the Swamp',goal:{k:'guards',ids:['rimefang','pyraxis','sekhmara','mothermire']},
-   open:['Four beacons of light rise over the nearest lands: the Frostpeak Tundra to the north, the Ember Wastes to the east, the Sunscorch Desert to the south and the Mirefen Swamp to the west.','"Each Warden has a weakness," Pip says. "Watch the name on its health bar. And if one hides behind a shield, hit it with two different schools of magic at once: a combo will shatter it."'],
-   done:['As the fourth Warden falls, its light rises into the sky and joins the others. You feel the Rift flinch.','"It felt that," Pip grins. "But the far lands are wilder still."']},
-  {t:'Chapter III · Wardens of the Far Lands',obj:'Free the Wardens of the Peaks, the Canyon, the Wilds and the Gloamwood',goal:{k:'guards',ids:['prismwarden','kharr','thornwood','bonetyrant']},
-   open:['Beyond the near lands lie the Prism Peaks, Redrock Canyon, the Verdant Wilds and the haunted Gloamwood.','"These Wardens are older and cleverer," Pip warns. "Use the land: set the grass alight, freeze the water and walk across it, call lightning into the rivers."'],
-   done:['Eight Wardens free. The violet glow in Crown Hollow is dimmer now, but it pulses, angry.','"It is calling the last of them to the edge of the world," Pip says.']},
-  {t:'Chapter IV · The Edge of the World',obj:'Free the Wardens of Skyreach, the Caldera, the Coast and the Fungal Deep',goal:{k:'guards',ids:['stormbeak','ashmaw','kragmaw','sporemother']},
-   open:['The outer lands: the windy Skyreach Highlands, the smoking Obsidian Caldera, the Coral Coast and the glowing Fungal Deep.','"You will want your broom for this," Pip says. "And potions. Lots of potions."'],
-   done:['Twelve lights now circle the sky above Meadowvale. Only one Warden remains, and it is not on the ground at all.','"Aeloria," Pip breathes. "The kingdom above the clouds. The Rift has reached even there."']},
-  {t:'Chapter V · The Queen in the Clouds',obj:'Fly to Aeloria and free the Tempest Seraph',goal:{k:'guards',ids:['seraph']},
-   open:['High above the southern sea floats Aeloria, a cloud island with a marble palace. Only a broom can reach it.','"Queen Seraphine will know what to do," says Pip. "But the storm around her island is no ordinary storm."'],
-   done:['The Tempest Seraph screams, and the storm breaks. Sunlight pours over Aeloria.','Queen Seraphine finds you among the clouds. "Thirteen Wardens, freed. You have done what my whole court could not. But the Rift is still open, and it will send everything it has left through. Close it, wizard."']},
-  {t:'Finale · Seal the Rift',obj:'Enter the Rift (from the main menu) and survive 10 waves',goal:{k:'rift',n:10},
-   open:['The Rift has opened fully in the Sunscorch Desert, a ring of violet crystal around a hole in the sky.','"Everything it has left will come through," Pip says. "Wave after wave. Survive long enough, and the thirteen Wardens can seal it behind you." Open the main menu and choose The Rift when you are ready.'],
-   done:['On the tenth wave the thirteen lights fall from the sky like stars and close around the Rift. It shrinks, flickers… and is gone.','Meadowvale is quiet. The grass grows back over Crown Hollow.','Pip lands on your shoulder. "Not bad, for a wizard who woke up in a field."','THE END · Thank you for playing. New Game+ is now open from the main menu, and the Rift remains for those who want more.']}
+  {t:'Prologue: The Waking',obj:'Reach level 3',goal:{k:'level',n:3},
+   open:['You wake in the long grass below the Old Tower. Your staff is still warm.','Pip, the tower\'s fairy, is sitting on the rim of the well. "Monsters in the meadow, the old wards gone quiet, and you asleep through all of it. Up you get. Let\'s see what you can do."'],
+   done:['"Better," says Pip, which is high praise, coming from Pip.','"South of here there\'s a hollow where nothing grows. The trouble started there."']},
+  {t:'Chapter One: The Hollow King',obj:'Defeat the Hollow King in Crown Hollow',goal:{k:'king'},
+   open:['Crown Hollow is a scar in the land to the south. A king lived there once. Whatever lives there now still wears his crown.','"He calls for help when he\'s losing," says Pip. "Deal with the help first."'],
+   done:['The king falls and his crown cracks in two. Beneath it the ground glows violet, like a wound that never closed.','Pip is quiet for a long moment. "He wasn\'t the one pulling the strings. Something on the other side of that crack was."','"There were thirteen Wardens once, one for every land. If the Rift has them, we take them back."']},
+  {t:'Chapter Two: The Near Lands',obj:'Free the Wardens of the tundra, the wastes, the desert and the swamp',goal:{k:'guards',ids:['rimefang','pyraxis','sekhmara','mothermire']},
+   open:['Four columns of light stand over the near lands: the tundra to the north, the wastes to the east, the desert to the south, the swamp to the west.','"Every Warden has a weakness, and it\'s written on its health bar," says Pip. "If one hides behind a shield, hit it with two schools of magic, one straight after the other."'],
+   done:['The fourth Warden falls and its light rises to join the others. Somewhere under Crown Hollow, something flinches.','"Good. The far lands next. They won\'t be as forgiving."']},
+  {t:'Chapter Three: The Far Lands',obj:'Free the Wardens of the peaks, the canyon, the wilds and the Gloamwood',goal:{k:'guards',ids:['prismwarden','kharr','thornwood','bonetyrant']},
+   open:['Past the near lands lie the Prism Peaks, Redrock Canyon, the Verdant Wilds and the Gloamwood.','"Use the land," says Pip. "Burn the grass. Freeze the lakes. Put lightning in the water."'],
+   done:['Eight lights circle the sky. The glow in Crown Hollow has dimmed, but it pulses, slow and angry.','"It\'s dragging the last of them to the edge of the world."']},
+  {t:'Chapter Four: The Edge of the World',obj:'Free the Wardens of Skyreach, the caldera, the coast and the Fungal Deep',goal:{k:'guards',ids:['stormbeak','ashmaw','kragmaw','sporemother']},
+   open:['The outer lands: the wind-scoured Skyreach Highlands, the smoking Obsidian Caldera, the Coral Coast and the Fungal Deep.','"Bring the broom," says Pip. "And more potions than you think you\'ll need."'],
+   done:['Twelve lights now. One Warden is still missing, and it isn\'t on the ground.','"Aeloria," Pip says. "The island above the clouds. Even there."']},
+  {t:'Chapter Five: The Island in the Clouds',obj:'Fly to Aeloria and free the Tempest Seraph',goal:{k:'guards',ids:['seraph']},
+   open:['Aeloria floats high above the southern sea, a marble palace on an island of cloud. Only a broom will get you there.','"Queen Seraphine will help if she can," says Pip. "But that storm around her island isn\'t weather."'],
+   done:['The Tempest Seraph comes apart and the storm goes with it. Sunlight falls on Aeloria for the first time in years.','Queen Seraphine finds you among the clouds. "Thirteen Wardens. My whole court could not free one. But the Rift is still open, and it will send everything it has left. Close it."']},
+  {t:'The Last Chapter: The Rift',obj:'Enter the Rift from the main menu and hold out for 10 waves',goal:{k:'rift',n:10},
+   open:['The Rift has torn wide open in the Sunscorch Desert: a ring of violet crystal around a hole in the sky.','"Everything it has left will come through there," says Pip. "Hold long enough and the Wardens can seal it behind you." Choose The Rift from the main menu when you\'re ready.'],
+   done:['On the tenth wave, thirteen lights fall out of the sky and close around the Rift. It shrinks to a point, flickers, and is gone.','Grass is already creeping back over Crown Hollow.','"Not bad," says Pip, "for someone who slept through the start of it."','The End. New Game+ is waiting on the main menu, and the Rift is still there if you want more.']}
 ];
 const STC={queue:[],open:false};
 function storyStep(){return SKILL.story==null?0:SKILL.story;}
@@ -6384,7 +6456,7 @@ function updateStory(dt){
   const ch=storyCh();if(!ch)return;
   if((SKILL.storySeen==null?-1:SKILL.storySeen)<SKILL.story&&!player.dead&&!STC.open){SKILL.storySeen=SKILL.story;storyCard(ch.t,ch.open,'Begin');storyWaypoint(ch);trackerDirty=true;saveGame();return;}
   const pg=storyProgress(ch);if(pg!==STC.lastPg){STC.lastPg=pg;trackerDirty=true;}
-  if(storyMet(ch)){const k=SKILL.story;SKILL.story++;storyCard(ch.t+' · complete',ch.done,k===STORY.length-1?'The end':'Continue');
+  if(storyMet(ch)){const k=SKILL.story;SKILL.story++;storyCard(ch.t,ch.done,k===STORY.length-1?'The end':'Continue');
     const xp=200+k*600;gainXP(xp);SKILL.gold+=100+k*150;dropItem(player.x,player.feet+1,player.z,'tome',1);feed('Story reward: +'+xp+' XP, '+(100+k*150)+' gold and a tome','#ffd98a');
     if(k===STORY.length-1){achEv('story',1);}trackerDirty=true;saveGame();}
 }
@@ -6542,9 +6614,8 @@ function localWeather(kind){if(kind==='clear'||kind==='cloudy')return kind;if(SK
   if(kind==='fog')return 'fog';
   if(snow>0.45)return kind==='storm'?'blizzard':'snow';if(sand>0.45)return 'sandstorm';if(ash>0.45)return 'ashfall';if(spore>0.45)return 'spores';return kind;}
 const WXNAME={clear:'Clear',cloudy:'Cloudy',rain:'Rain',storm:'Thunderstorm',fog:'Fog',snow:'Snow',blizzard:'Blizzard',sandstorm:'Sandstorm',ashfall:'Ash fall',spores:'Spore drift'};
-const WXICON={clear:'☀',cloudy:'☁',rain:'🌧',storm:'⛈',fog:'🌫',snow:'❄',blizzard:'❄',sandstorm:'🌪',ashfall:'🌋',spores:'✦'};
-const WXTIP={rain:'Rain: lightning spells +25%, fire spells −20%, and grass fires go out.',storm:'Thunderstorm: lightning spells +35%, fire −25%. Lightning strikes the land!',snow:'Snow: frost spells +20%.',blizzard:'Blizzard: frost spells +30%, and it is hard to see.',
-  sandstorm:'Sandstorm: earth spells +20%, and it is hard to see.',ashfall:'Ash fall: fire spells +15%.',fog:'Fog: you cannot see far, and nor can the monsters.',spores:'Spore drift: poison spells +20%.',night:'Night: monsters notice you from further away, and shadow spells are +20%.'};
+const WXICON={clear:'\u2600\ufe0e',cloudy:'\u2601\ufe0e',rain:'\u2602\ufe0e',storm:'\u03df',fog:'\u2261',snow:'\u2744\ufe0e',blizzard:'\u2744\ufe0e',sandstorm:'\u2248',ashfall:'\u2234',spores:'\u2217'};
+const WXTIP={rain:'Rain. Lightning spells hit harder, fire spells weaker, and grass fires go out.',storm:'A thunderstorm. Lightning spells are much stronger, and the sky hits back.',snow:'Snow. Frost spells hit harder.',blizzard:'A blizzard. Frost spells hit much harder, and you can barely see.',sandstorm:'A sandstorm. Earth spells hit harder, and you can barely see.',ashfall:'Ash is falling. Fire spells hit harder.',fog:'Fog. You can\'t see far, and neither can they.',spores:'The spores are drifting. Poison spells hit harder.',night:'Night. Monsters notice you from further off, and shadow spells hit harder.'};
 function wxMul(el){const L=WX.local,k=WX.k;let m=1;
   if(L==='rain'){if(el==='storm')m*=1+0.25*k;if(el==='fire')m*=1-0.2*k;}
   else if(L==='storm'){if(el==='storm')m*=1+0.35*k;if(el==='fire')m*=1-0.25*k;}
@@ -6586,12 +6657,12 @@ function updateWeather(dt){
     const rv=(L==='rain'||L==='storm'?0.16:L==='sandstorm'||L==='blizzard'?0.12:0)*k*(homeOpen?0.4:1);WX.rainG.gain.setTargetAtTime(rv,AU.ctx.currentTime,0.6);WX.rainF.frequency.value=L==='sandstorm'||L==='blizzard'?600:1800;}
   // tell the player when the weather or the time of day changes
   const ph=phaseName(WX.t);if(!homeOpen&&(L!==WX.lastLocal||ph!==WX.lastPhase)){
-    if(WX.lastLocal&&L!==WX.lastLocal&&WXTIP[L])feed(WXICON[L]+' '+WXTIP[L],'#bfe0ff');
-    if(WX.lastPhase&&ph!==WX.lastPhase&&(ph==='Night'||ph==='Dawn'))feed(ph==='Night'?'🌙 '+WXTIP.night:'🌅 Dawn breaks. The monsters calm down.','#c8c0ff');
+    if(WX.lastLocal&&L!==WX.lastLocal&&WXTIP[L])feed(WXTIP[L],'#d6e4f0');
+    if(WX.lastPhase&&ph!==WX.lastPhase&&(ph==='Night'||ph==='Dawn'))feed(ph==='Night'?WXTIP.night:'Dawn. The monsters settle down.','#ded6ff');
     WX.lastLocal=L;WX.lastPhase=ph;}
   clockT-=dt;if(clockT<=0){clockT=0.5;const hh=Math.floor(WX.t*24),mm=Math.floor((WX.t*24-hh)*60/15)*15,night=WX.t<0.22||WX.t>0.8;
-    clockEl.querySelector('i').textContent=night&&L==='clear'?'☾':WXICON[L]||'☀';clockEl.querySelector('b').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
-    clockEl.querySelector('span').textContent=(L==='clear'?ph:WXNAME[L])+' · Day '+WX.dayNo;clockEl.title=WXTIP[L]||(night?WXTIP.night:'');}
+    clockEl.querySelector('i').textContent=night&&L==='clear'?'\u263e':WXICON[L]||'\u2600\ufe0e';clockEl.querySelector('b').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+    clockEl.querySelector('span').textContent=L==='clear'?'':WXNAME[L];clockEl.title=WXTIP[L]||(night?WXTIP.night:'');}
 }
 function wxBolt(x,z,near){const y=groundH(x,z),top=new T.Vector3(x+fr(-20,20),y+140,z+fr(-20,20)),bot=new T.Vector3(x,y,z);showBolt([{pts:boltPath(top,bot,8,6),w:near?0.35:0.5}],0.35,0xfff2b8);skyBoost=near?1:0.7;
   after(near?0:Math.hypot(x-player.x,z-player.z)/340,()=>SFX.thunder&&SFX.thunder(x,z));
@@ -6803,7 +6874,7 @@ function updateHud(){
   const p=Math.max(0,player.hp)/player.max;hpFill.style.width=(p*100).toFixed(1)+'%';const t=String(Math.ceil(Math.max(0,player.hp)));
   if(hpText.textContent!==t){hpText.textContent=t;hpEl.setAttribute('aria-valuenow',t);}hpEl.classList.toggle('low',p<0.3);
   const left=CAMPS.filter(c=>!c.cleared).length;
-  const w=!COMBAT.on?'Peaceful mode · P to fight':left+' camp'+(left===1?'':'s')+' left · '+COMBAT.kills+' defeated'+(COMBAT.bossDown?' · King slain':'');
+  const w=!COMBAT.on?'Peaceful mode (press P to fight)':'';
   if(waveEl.textContent!==w)waveEl.textContent=w;
 }
 function healPlayer(n){if(player.dead)return;player.hp=Math.min(player.max,player.hp+n);hpEl.classList.remove('heal');void hpEl.offsetWidth;hpEl.classList.add('heal');SFX.heal();updateHud();}
@@ -7658,7 +7729,7 @@ function questProgress(id){const g=QUESTS[id].goal,st=SKILL.quests[id];
 function renderTracker(){
   trackerDirty=false;const act=Object.keys(SKILL.quests).filter(id=>SKILL.quests[id].state==='active'),ch=storyCh();
   const main=ch?'<div class="tq tmain"><b>'+ch.t+'</b><span>'+ch.obj+(storyProgress(ch)?' · '+storyProgress(ch):'')+'</span></div>':'';
-  trackerEl.innerHTML=(main||act.length)?'<h3>Quests <kbd>J</kbd></h3>'+main+act.slice(0,ch?3:4).map(id=>'<div class="tq"><b>'+QUESTS[id].name+'</b><span>'+questProgress(id)+'</span></div>').join(''):'';
+  trackerEl.innerHTML=(main||act.length)?'<h3>Quests <kbd>J</kbd></h3>'+main+act.slice(0,ch?1:2).map(id=>'<div class="tq"><b>'+QUESTS[id].name+'</b><span>'+questProgress(id)+'</span></div>').join(''):'';
 }
 /* villagers: elders, harm and fear */
 function buildElder(){
