@@ -5981,23 +5981,38 @@ function buildSpider(){
   return {g,mats:[shell,mark],limbs:{legs},head};
 }
 function buildBoss(){
-  const g=new T.Group(),rock=new T.MeshStandardMaterial({map:pieceMesh.material.map,color:new T.Color(0x625d6e).convertSRGBToLinear(),roughness:0.95}),
-    dark=stdMat(0x2c2836),gold=stdMat(0xd9a441,{metalness:0.6,roughness:0.35}),core=glowMat(0xb46bff);
+  const g=new T.Group(),steel=stdMat(0x3a3646,{metalness:0.55,roughness:0.42}),dark=stdMat(0x1c1a24,{metalness:0.4,roughness:0.5}),trim=stdMat(0x7a6a4a,{metalness:0.6,roughness:0.35}),
+    gold=stdMat(0xd9a441,{metalness:0.7,roughness:0.3}),core=glowMat(0xb46bff),cape=stdMat(0x3a1a4a,{side:T.DoubleSide,roughness:1}),capeIn=stdMat(0x5a2a2a,{side:T.DoubleSide,roughness:1});
   const boxes=[],limbs={};
-  const B=(w,h,d,x,y,z,parent,mat)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat||rock);m.position.set(x,y,z);(parent||g).add(m);boxes.push(m);return m;};
+  const B=(w,h,d,x,y,z,parent,mat,rx,ry,rz)=>{const m=new T.Mesh(new T.BoxGeometry(w,h,d),mat||steel);m.position.set(x,y,z);if(rx||ry||rz)m.rotation.set(rx||0,ry||0,rz||0);(parent||g).add(m);boxes.push(m);return m;};
+  const glowAt=(par,x,y,z,r)=>{const s=new T.Mesh(new T.SphereGeometry(r,10,8),core);s.position.set(x,y,z);par.add(s);return s;};
   for(const sx of[-1,1]){
-    const leg=new T.Group();leg.position.set(sx*0.42,1.0,0);g.add(leg);B(0.5,1.0,0.55,0,-0.5,0,leg);limbs[sx<0?'legL':'legR']=leg;
-    const arm=new T.Group();arm.position.set(sx*1.0,2.05,0);g.add(arm);B(0.46,0.72,0.46,0,-0.3,0,arm);B(0.58,0.66,0.58,0,-0.98,0.05,arm,dark);limbs[sx<0?'armL':'armR']=arm;
-    B(0.62,0.32,0.66,sx*1.0,2.32,0,null,dark);
+    const leg=new T.Group();leg.position.set(sx*0.36,1.05,0);g.add(leg);B(0.36,0.52,0.42,0,-0.24,0,leg);glowAt(leg,0,-0.52,0.12,0.09);B(0.26,0.12,0.2,0,-0.52,0.2,leg,trim);
+    B(0.32,0.5,0.38,0,-0.8,0,leg,dark);B(0.34,0.14,0.56,0,-1.0,0.1,leg,steel);limbs[sx<0?'legL':'legR']=leg;
+    const arm=new T.Group();arm.position.set(sx*0.82,2.12,0);g.add(arm);B(0.3,0.6,0.3,0,-0.28,0,arm);glowAt(arm,0,-0.62,0,0.1);
+    B(0.38,0.62,0.4,0,-0.98,0.03,arm,dark);B(0.42,0.1,0.44,0,-0.7,0.03,arm,trim);
+    for(let k=0;k<4;k++){const c=new T.Mesh(new T.ConeGeometry(0.045,0.32,5),steel);c.position.set((k-1.5)*0.09,-1.38,0.12);c.rotation.x=Math.PI-0.2;arm.add(c);}
+    limbs[sx<0?'armL':'armR']=arm;
+    // spiked pauldrons in three layers
+    for(let k=0;k<3;k++)B(0.62-k*0.08,0.14,0.66-k*0.06,sx*(0.82+k*0.05),2.38-k*0.12,0,null,k?steel:dark,0,0,sx*(0.35+k*0.12));
+    for(let k=0;k<3;k++){const sp=new T.Mesh(new T.ConeGeometry(0.06,0.42,5),trim);sp.position.set(sx*(0.75+k*0.12),2.6,(k-1)*0.18);sp.rotation.z=-sx*0.5;g.add(sp);}
   }
-  B(1.4,0.75,0.9,0,1.35,0);B(1.7,0.75,1.0,0,1.97,0);
-  const head=new T.Group();head.position.set(0,2.55,0.1);g.add(head);B(0.62,0.52,0.58,0,0.1,0,head);
-  B(0.7,0.1,0.64,0,0.38,0,head,gold);
-  for(let i=0;i<5;i++){const sp=new T.Mesh(new T.ConeGeometry(0.06,0.32,4),gold);sp.position.set((i-2)*0.15,0.58,0.26-Math.abs(i-2)*0.06);head.add(sp);}
-  const c=new T.Mesh(new T.BoxGeometry(0.46,0.36,0.06),core);c.position.set(0,1.97,0.53);g.add(c);
-  for(const sx of[-1,1]){const e=new T.Mesh(new T.BoxGeometry(0.13,0.07,0.04),core);e.position.set(sx*0.15,0.14,0.3);head.add(e);}
+  // waist plates and a hollow chest with light leaking out
+  for(let i=0;i<7;i++){const a=(i/7-0.5)*2.6;B(0.32,0.5,0.06,Math.sin(a)*0.5,1.15,Math.cos(a)*0.34,null,i%2?dark:steel,-0.15,a,0);}
+  B(1.05,0.3,0.62,0,1.45,0,null,dark);B(1.15,0.78,0.6,0,1.92,0,null,steel);B(0.6,0.22,0.5,0,2.35,0,null,dark);
+  for(let k=0;k<3;k++){B(0.36,0.05,0.04,-0.28,1.75+k*0.15,0.31,null,trim);B(0.36,0.05,0.04,0.28,1.75+k*0.15,0.31,null,trim);}
+  const c=new T.Mesh(new T.BoxGeometry(0.12,0.62,0.06),core);c.position.set(0,1.9,0.3);g.add(c);
+  const aura=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:cC(0xb46bff),blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,opacity:0.55}));aura.scale.set(1.3,1.6,1);aura.position.set(0,1.9,0.15);g.add(aura);
+  // the helm, eye slits, and an iron crown floating above it
+  const head=new T.Group();head.position.set(0,2.62,0.06);g.add(head);B(0.46,0.56,0.5,0,0.12,0,head,dark);B(0.5,0.1,0.54,0,0.3,0,head,steel);B(0.1,0.42,0.06,0,0.1,0.26,head,steel);
+  for(const sx of[-1,1]){const e=new T.Mesh(new T.BoxGeometry(0.14,0.05,0.04),core);e.position.set(sx*0.12,0.16,0.26);e.rotation.z=sx*0.15;head.add(e);B(0.06,0.3,0.4,sx*0.25,0.05,0,head,steel);}
+  const crown=new T.Group();crown.position.y=0.62;crown.rotation.z=0.12;head.add(crown);const ring=new T.Mesh(new T.TorusGeometry(0.3,0.04,6,20),gold);ring.rotation.x=Math.PI/2;crown.add(ring);
+  for(let i=0;i<9;i++){const a=i/9*Math.PI*2,sp=new T.Mesh(new T.ConeGeometry(0.05,i%2?0.26:0.42,5),i%3?gold:trim);sp.position.set(Math.cos(a)*0.3,0.15+(i%2?0:0.08),Math.sin(a)*0.3);crown.add(sp);}
+  const gem=new T.Mesh(new T.OctahedronGeometry(0.07,0),core);gem.position.set(0,0.1,0.32);crown.add(gem);
+  // a tattered cape
+  for(let i=0;i<7;i++){const w=0.26,len=1.7+Math.sin(i*2.3)*0.35+(i%2?0.2:0),p=new T.Mesh(new T.PlaneGeometry(w,len),i%3?cape:capeIn);p.position.set((i-3)*0.2,2.35-len/2,-0.38-Math.abs(i-3)*0.03);p.rotation.set(0.1,(i-3)*0.08,0);g.add(p);}
   const S=2.6;g.scale.setScalar(S);
-  return {g,mats:[rock,dark,gold],limbs,head,boxes,scale:S,core:c};
+  return {g,mats:[steel,dark,trim],limbs,head,boxes,scale:S,core:c};
 }
 function collideBody(o,r,hs){
   for(const hh of hs){const h=o.y+hh;
@@ -7503,6 +7518,27 @@ const ITEMS={
   rshadow:{name:'Rune of Shadow',desc:'Needed to master Umbramancy.',color:'#a45bff',cat:5},
   rlight:{name:'Rune of Light',desc:'Needed to master Lumancy.',color:'#ffe9a0',cat:5},
 };
+/* the words on things: items and quests, rewritten */
+[['potion','Tastes of copper and mint. Heals 50. Press H to drink.'],['bigpotion','Thick as honey. Puts you back together completely.'],['tome','Someone else\'s notes, in better handwriting than yours. Read it for a skill point.'],
+ ['silk','Spider thread that never quite stops being sticky.'],['horn','Imp horns grow back. The imps are still annoyed about it.'],['tusk','Yellowed, chipped, and heavier than it has any right to be.'],
+ ['essence','A cold purple light. If you hold it to your ear it hums a note just out of tune.'],['core','The stone a golem thinks with. Still warm.'],['fletch','Goblin arrows. Half of them are crooked; the other half are worse.'],
+ ['pelt','Frost wolf fur. Snow slides straight off it.'],['frostcore','Ice from deep in a Yeti\'s chest. It doesn\'t melt; it sulks.'],['stinger','Hold it by the thick end.'],['wraps','Mummy linen, older than any kingdom on the map.'],
+ ['ember','A coal that refuses to go out, no matter what you drown it in.'],['bogmoss','Wet, glowing, and it smells exactly like you\'d expect.'],['candle','Burn it while you study and the hours slip by twice as fast.'],
+ ['shard','A piece of the Hollow King\'s crown. Cold, even in the sun.'],['dust','What\'s left when magic settles. Every spell needs some. Merchants sell it, and smashing buildings shakes it loose.'],
+ ['sunleaf','Picked in the meadow at midday; warm for hours after.'],['moonpetal','Only opens after dark. Its blue fades a little every time you look away.'],['feather','Weighs nothing. It drifts upward if you let go.'],
+ ['frostbloom','Grows in the snow, and wilts if you carry it too close to a fire.'],['icecrystal','Clear as water, colder than snow.'],['fireopal','There\'s a flame inside that moves when you aren\'t watching.'],
+ ['sulfur','Yellow, crumbly, and you\'ll be smelling it on your gloves for days.'],['sandrose','A flower made of crystal, grown by the desert wind.'],['sunstone','Holds the heat of noon long after dark.'],
+ ['glowcap','A toadstool that glows. Don\'t eat it.'],['stormglass','Sand fused where lightning struck the peaks. It still crackles.'],['prism','Splits light into colours you don\'t have names for.'],
+ ['ironore','Red-brown rock from the canyon walls. Heavy.'],['vineheart','The core of a jungle vine. It beats, slowly.'],['orchid','A pale pink flower that grows where nothing else will.'],
+ ['gravedust','Grey dust from the Gloamwood. It never settles quite where you put it.'],['livecrystal','Hums when a storm is coming.'],['scale','A basilisk scale. Hard as stone, and it makes your fingers tingle.'],
+ ['fang','A shadow panther\'s fang. Long, curved, and black to the root.'],['vineroot','Still twitching.'],['bone','From a skeleton knight that finally stayed down.'],['ecto','Cold, wobbly, and it whispers if you squeeze it.'],
+ ['talon','A griffin talon, flecked with gold.'],['obsidian','Volcanic glass, still warm from the caldera.'],['shell','A reef crab\'s shell, pink and ridged.'],['pearl','A sea pearl. Merchants pay well and ask no questions.'],
+ ['spore','A soft pouch of glowing spores. Keep it sealed.'],['gel','Slime gel. It keeps trying to get back to the rest of the slime.'],['batwing','Thin as paper and twice as tough.'],
+ ['heartwood','The living centre of a treant. It\'s still growing.'],['chitin','Beetle shell, harder than iron and half the weight.'],['wyrmtooth','A sand wyrm\'s tooth, as long as your hand.'],
+ ['ecore','A stone holding a spark of raw magic. It wants to be used.'],['heart','A red stone the strongest monsters carry. The mightiest spells won\'t work without one.']
+].forEach(([k,d])=>{if(ITEMS[k])ITEMS[k].desc=d;});
+if(ITEMS.fang)ITEMS.fang.name='Panther Fang';if(ITEMS.bone)ITEMS.bone.name='Knight\'s Bone';
+
 const LOOT_TABLE={
   imp:{xp:15,gold:[2,6],drops:[['horn',0.5],['potion',0.1]]},
   archer:{xp:18,gold:[3,7],drops:[['fletch',0.55],['potion',0.12]]},
@@ -7583,6 +7619,39 @@ const QUESTS={
   eyrie:{name:'The Sentinel Spire',minLevel:13,desc:'Seraph Sentinels, twisted by the storm, hold the eastern isle of Aeloria. Clear the Sentinel Spire.',goal:{type:'camp',what:'Sentinel Spire'},reward:{xp:2600,gold:600,items:{tome:2,rwind:1,heart:1}}},
   king:{name:'The Hollow King',minLevel:6,desc:'Defeat the Hollow King in Crown Hollow, to the south.',goal:{type:'boss'},reward:{xp:1000,gold:300}}
 };
+[['sparks','First Sparks','Knock 40 blocks loose from any building. Magic needs practice, and the meadow has plenty of walls.'],
+ ['imps','Imp Trouble','Bramble Imps are raiding the meadow in small packs. Put down four of them.'],
+ ['village','Find the Villages','Brookhollow lies north and Eastmere east. Find either and talk to its elder.'],
+ ['silk','Webs in the West','Elder Maren needs 5 Spider Silk for her nets. The Spider Nest is in the far north-west.'],
+ ['goblins','Goblin Menace','The goblins west of the Old Wood have been stealing sheep. Clear their camp.'],
+ ['quarry','Quiet the Quarry','The golems in the quarry north of Brookhollow have started walking. Stop them.'],
+ ['ogres','Ogre Hunt','Three ogres have been seen near their den to the north-east. Make it none.'],
+ ['wisps','Wisp Lights','Elder Tobin wants 4 Wisp Essence from the Wisp Shrine in the south-east. He won\'t say what for.'],
+ ['raiders','Raiders at the Lake','Raiders have camped south-west of Mirror Lake. Send them packing.'],
+ ['frostwolves','Wolves of the North','The frost wolves are taking Hearthmoor\'s goats. Thin the pack: six wolves.'],
+ ['icekeep','The Frozen Keep','Something has moved into the ruined ice fortress in the north-west of the tundra. Clear Frost Keep.'],
+ ['stingers','Stingers','Elder Qadir brews antivenom from scorpion stingers. Bring him six from the Sunscorch Desert.'],
+ ['temple','The Sunken Temple','The dead are walking in the Sunken Temple, south-east in the desert. Put them back.'],
+ ['mire','The Witch of the Mire','Nobody who goes into the Witch\'s Mire comes back the same. Clear it, deep in the Mirefen Swamp.'],
+ ['forge','Cold the Forge','Fire creatures have taken the Ember Forge in the wastes to the east. Put it out.'],
+ ['basilisks','Stone Gaze','Five basilisks are loose in Redrock Canyon. Don\'t look them in the eye.'],
+ ['fort','The Bandit Fort','The bandits in the heart of Redrock Canyon have dynamite and no sense. Clear their fort.'],
+ ['stalkers','Eyes in the Leaves','Shadow panthers are hunting the Verdant Wilds. Take down six before they take down a villager.'],
+ ['jtemple','The Overgrown Temple','A temple deep in the Verdant Wilds has woken up hungry. Clear it.'],
+ ['prism','The Singing Spire','The Prism Spire in the peaks has started to sing, and the crystal things that live there don\'t like visitors.'],
+ ['crypt','The Haunted Crypt','The crypt in the Gloamwood isn\'t staying shut. Clear it.'],
+ ['griffins','Wings over Skyreach','The griffins of the Skyreach Highlands have turned on the shepherds. Bring down six.'],
+ ['aerie','Storm the Aerie','Stormcrown Aerie, the white tower west of Highwatch, is full of things that fly. Clear it.'],
+ ['hounds','Glass from the Fire','Elder Vesna needs 6 Obsidian Shards. The wyverns and ash wraiths of the caldera carry them.'],
+ ['citadel','The Obsidian Citadel','Knights in black glass armour hold the citadel south-west of Mount Cinder. Break them.'],
+ ['crabs','Shell Game','The reef crabs on the Coral Coast are getting bold. Eight fewer would help.'],
+ ['wreck','The Sunken Wreck','A wreck has washed up east of Saltmere Light, and something came ashore with it. Clear it.'],
+ ['spores','Spore Season','Elder Mossa needs 6 Spore Sacs from the shroomfolk of the Fungal Deep. Hold your breath.'],
+ ['myco','Heart of the Mycelium','The great mushroom north-west of Sporewick is the source of the spores. Clear the Mycelium Heart.'],
+ ['stormrift','Calm the Storm Rift','Storm spirits have torn open a rift on Aeloria\'s western isle. Close it.'],
+ ['grimoire','The Grimoire','Open your spellbook (K), gather what one spell asks for, and study it. Thorn Dart, Holy Bolt and Air Bolt need only meadow herbs.']
+].forEach(([k,n,d])=>{if(QUESTS[k]){QUESTS[k].name=n;QUESTS[k].desc=d;}});
+
 VILLAGES[0].elder='Elder Maren';VILLAGES[0].chain=['village','silk','goblins','quarry','mire','crypt','king'];
 VILLAGES[1].elder='Elder Tobin';VILLAGES[1].chain=['village','ogres','wisps','raiders','forge','king'];
 VILLAGES[2].elder='Elder Sigrun';VILLAGES[2].chain=['village','frostwolves','icekeep','prism','king'];
