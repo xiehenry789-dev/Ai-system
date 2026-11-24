@@ -629,6 +629,20 @@ body.narr #menubtn,body.home #menubtn{display:none!important}
 #narr .nr-hint{position:absolute;left:0;right:0;bottom:calc(11vh*0.35);margin:0;text-align:center;font:italic 400 13px/1 var(--ui);color:rgba(233,216,176,.6)}
 body.narr #hud,body.narr #status,body.narr #tracker,body.narr #clock,body.narr #mini,body.narr #fairy,body.narr #feed,body.narr #mute,body.narr #bagbtn,body.narr #bookbtn,body.narr #broombtn,body.narr #strike,body.narr #jump,body.narr #joy,body.narr #hint,body.narr #cross,body.narr #story{display:none!important}
 @media (max-width:700px){#narr .nr-line{font-size:21px}#narr .nr-title{font-size:13px}}
+#lore{position:fixed;inset:0;z-index:29;display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at center,rgba(10,6,2,.45),rgba(0,0,0,.8))}
+#lore[hidden]{display:none!important}
+#lore .lo-card{width:min(560px,100%);max-height:calc(100% - 20px);overflow:auto;padding:34px 38px 26px;background:var(--parch-bg);color:var(--parch-ink);border:1px solid var(--rule);border-radius:2px;outline:1px solid rgba(59,42,26,.55);outline-offset:-8px;box-shadow:0 24px 60px rgba(0,0,0,.6);transform:rotate(-.4deg)}
+#lore h2{margin:0 0 4px;font:700 24px/1.2 var(--display);color:var(--wax);letter-spacing:.03em}
+#lore .lo-by{margin:0 0 18px;font:italic 400 14px/1.3 var(--ui);color:var(--parch-soft)}
+#lore .lo-body p{margin:0 0 12px;font:italic 400 19px/1.55 'IM Fell English',var(--ui);color:#2b1f14}
+#lore .lo-body p:last-child{margin-bottom:22px}
+#lore.stone .lo-card{background:linear-gradient(160deg,#8a8490,#5e5866);color:#efe9f5;border-color:#2a2630;outline-color:rgba(255,255,255,.2);transform:none}
+#lore.stone h2{color:#f0d890}#lore.stone .lo-by{color:#d8d0e0}#lore.stone .lo-body p{color:#f5f0fa;font-style:normal;font-family:'IM Fell English SC',var(--display);letter-spacing:.03em;text-shadow:0 1px 0 rgba(0,0,0,.4)}
+#lore.echo .lo-card{background:rgba(20,26,46,.92);color:#dfe8ff;border-color:rgba(184,200,255,.5);outline-color:rgba(184,200,255,.25);transform:none}
+#lore.echo h2{color:#c8d8ff}#lore.echo .lo-by{color:#a8b8d8}#lore.echo .lo-body p{color:#e8eeff}
+.jr{width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit}.jr-k{font:700 11px/1 var(--display);letter-spacing:.12em;text-transform:uppercase;color:var(--wax);align-self:center;text-align:center}
+.jr-empty{margin:12px 2px;font:italic 400 15px/1.5 var(--ui);color:var(--parch-soft)}
+@media (max-width:700px){#lore .lo-card{padding:26px 22px 20px}#lore .lo-body p{font-size:17px}}
 </style>
 
 <canvas id="c" tabindex="0" aria-label="Wizard Meadow, a first-person magic sandbox"></canvas>
@@ -734,6 +748,7 @@ body.narr #hud,body.narr #status,body.narr #tracker,body.narr #clock,body.narr #
 <div id="lvlup" hidden><b></b><span></span></div>
 <div id="combo" hidden><b></b><span></span></div>
 <div id="cfx" hidden></div>
+<div id="lore" hidden role="dialog" aria-modal="true" aria-label="A piece of the story"><div class="lo-card"><h2></h2><p class="lo-by"></p><div class="lo-body"></div><button type="button" class="mbtn primary" id="loclose">Close</button></div></div>
 <div id="narr" hidden role="dialog" aria-live="polite" aria-label="Story"><div class="nr-bar nr-top"></div><div class="nr-bar nr-bot"></div><div class="nr-text"><p class="nr-title"></p><p class="nr-line"></p></div><button type="button" class="nr-skip">Skip</button><p class="nr-hint">Click to continue, Esc to skip</p></div>
 <div id="clock" role="status"><i aria-hidden="true">☀</i><b>08:00</b><span></span></div>
 <div id="ach" hidden role="status"><i aria-hidden="true">★</i><div><small>Achievement unlocked</small><b></b><span></span></div></div>
@@ -753,6 +768,7 @@ body.narr #hud,body.narr #status,body.narr #tracker,body.narr #clock,body.narr #
       <button class="ptab" data-tab="bag" type="button">Bag <kbd>I</kbd></button>
       <button class="ptab" data-tab="spells" type="button">Spells <kbd>K</kbd></button>
       <button class="ptab" data-tab="quests" type="button">Quests <kbd>J</kbd></button>
+      <button class="ptab" data-tab="journal" type="button">Journal</button>
       <button class="mbtn" id="pclose" type="button">Close</button>
     </div>
     <div id="pbody"></div>
@@ -6308,7 +6324,7 @@ const ACH_DEF=[
   ['camps','Peacekeeper','Clear 15 monster camps','camps',15],
   ['guard1','Giant Slayer','Defeat a land guardian','guard',1],['guard6','Warden of the Lands','Defeat 6 land guardians','guard',6],['guardall','Liberator','Defeat all 13 land guardians','guard',13],
   ['king','Kingslayer','Defeat the Hollow King','king',1],['nightmare','Nightmare Walker','Defeat a guardian on Nightmare','nightmare',1],['ng','Once More, With Feeling','Begin New Game+','ng',1],
-  ['rift5','Rift Walker','Survive 5 waves in the Rift','rift',5],['rift15','Rift Breaker','Survive 15 waves in the Rift','rift',15],['rift30','Rift Legend','Survive 30 waves in the Rift','rift',30],['story','The End','Finish the main story','story',1]
+  ['rift5','Rift Walker','Survive 5 waves in the Rift','rift',5],['rift15','Rift Breaker','Survive 15 waves in the Rift','rift',15],['rift30','Rift Legend','Survive 30 waves in the Rift','rift',30],['story','The End','Finish the main story','story',1],['lore10','Curious','Find 10 pieces of the hidden story','lore',10],['loreall','Archivist','Find every piece of the hidden story','lore',29],['wren','Remembered','Learn who you really are','wren',1]
 ];
 const ACH={got:[],q:[],showing:false,pollT:0};
 try{ACH.got=JSON.parse(localStorage.getItem('wizard-meadow-ach')||'[]')||[];}catch(_){}
@@ -6542,7 +6558,7 @@ const STORY=[
    open:['Long ago, the wards of Meadowvale kept the dark out.','Then, one by one, they went quiet.','Beneath the Old Tower, a young wizard slept through all of it.','Until a fairy named Pip decided that was enough sleeping.'],
    done:['The young wizard learned quickly. Fire came easily, and the imps learned to keep their distance.','But to the south lay a hollow where nothing grew, and something waited there, wearing a crown.']},
   {t:'The Hollow King',obj:'Defeat the Hollow King in Crown Hollow',goal:{k:'king'},
-   open:['Crown Hollow had been a palace once. Now it was a scar in the earth.','Its king had been dead a hundred years. He had not noticed.'],
+   open:['Crown Hollow had been a palace once. Now it was a scar in the earth.','Its king had been dead for forty years. He had not noticed.'],
    done:['The Hollow King fell, and his crown split in two.','Beneath it the ground glowed violet, like a wound that had never closed.','He had only ever been a puppet. Something on the other side of that crack held the strings.','Thirteen Wardens had once guarded the thirteen lands. Now the Rift held every one of them.']},
   {t:'The Near Lands',obj:'Free the Wardens of the tundra, the wastes, the desert and the swamp',goal:{k:'guards',ids:['rimefang','pyraxis','sekhmara','mothermire']},
    open:['Four columns of light rose over the near lands: the frozen north, the burning east, the desert south and the drowning west.','Each one was a Warden, twisted and waiting.','Pip had advice, as Pip always did: every Warden wears its weakness on its health bar, and a shield breaks under two schools of magic, one straight after the other.'],
@@ -6602,7 +6618,9 @@ function updateStory(dt){
   const ch=storyCh();if(!ch)return;
   if((SKILL.storySeen==null?-1:SKILL.storySeen)<SKILL.story&&!player.dead&&!STC.open){SKILL.storySeen=SKILL.story;storyCard(ch.t,ch.open,'Begin');storyWaypoint(ch);trackerDirty=true;saveGame();return;}
   const pg=storyProgress(ch);if(pg!==STC.lastPg){STC.lastPg=pg;trackerDirty=true;}
-  if(storyMet(ch)){const k=SKILL.story;SKILL.story++;storyCard(ch.t,ch.done,k===STORY.length-1?'The end':'Continue');
+  if(storyMet(ch)){const k=SKILL.story;SKILL.story++;const last=k===STORY.length-1,tru=last&&loreFound('venn');
+    storyCard(ch.t,tru?ch.done.slice(0,-1).concat(['As the Rift closed, the light that had held it for forty years came home.','The wizard remembered a tower, a teacher who was always tired, eleven friends and a twelfth, a frightened king, and a door that should never have been opened.','They remembered their name. It was Wren.','Pip, who had waited forty years to hear them say it, said nothing at all, and didn\'t need to.','The End.']):ch.done,last?'The end':'Continue');if(tru)achEv('wren',1);
+    if(ch.goal.k==='guards'&&ch.goal.ids.includes('seraph')&&!loreFound('venn'))after(6,()=>feed('Something has changed at the Old Tower.','#f0d8a0'));
     const xp=200+k*600;gainXP(xp);SKILL.gold+=100+k*150;dropItem(player.x,player.feet+1,player.z,'tome',1);feed('Story reward: +'+xp+' XP, '+(100+k*150)+' gold and a tome','#ffd98a');
     if(k===STORY.length-1){achEv('story',1);}trackerDirty=true;saveGame();}
 }
@@ -6883,6 +6901,103 @@ function updateLife(dt){
   if(on>0.5&&WX.wet<0.3&&!SKYCTX){LIFE.chirpT-=dt;if(LIFE.chirpT<=0){LIFE.chirpT=fr(0.12,0.7);const f=fr(4200,5000),pan=fr(-0.9,0.9),g=fr(0.006,0.016);for(let k=0;k<3;k++)sTone({t:k*0.045,dur:0.03,f0:f,g,pan,wave:'sine',a:0.004});}
     LIFE.owlT-=dt;if(LIFE.owlT<=0){LIFE.owlT=fr(18,40);const pan=fr(-0.8,0.8);sTone({dur:0.35,f0:390,f1:370,g:0.035,pan,a:0.06,wet:0.6});sTone({t:0.5,dur:0.6,f0:380,f1:340,g:0.03,pan,a:0.08,wet:0.6});}}
 }
+/* ── the hidden story: pieces of what really happened, scattered across the world ── */
+// order: where it sits in the Journal. at: where it lies. kind: scroll, stone or echo.
+const LORE=[
+ {id:'door',o:1,kind:'scroll',at:'tower',title:'A Note on the Tower Door',by:'Pinned inside the door of the Old Tower',
+  text:['To whoever wakes:','Do not climb to the top room. Do not ask Pip whose bed it is. She will tell you the truth, and the truth is not hers to tell.','Read the last page of my journal when the Wardens are free, and not one day before.','— A. V.']},
+ {id:'bed',o:2,kind:'scroll',at:'v0',title:'A Child\'s Letter',by:'Found under a stone by the Brookhollow well',
+  text:['Mam says the old wizard kept someone asleep up in the tower.','Da says there\'s nobody, only a bed with the covers turned down, and that it has been turned down for forty years.','I went up to look once. Nobody was in it.','The bed was warm.']},
+ {id:'census',o:3,kind:'scroll',at:'v1',title:'The Census of the Thirteen',by:'From the Eastmere archive, in a clerk\'s hand',
+  text:['Apprentices of Aldous Venn, sworn this year to the wards of Meadowvale, one to each land:','Halvard, the tundra. Brenna, the wastes. Qasim, the desert. Odile, the swamp. Lio, the peaks. Dunmore, the canyon. Ysmay, the wilds. Corvin, the Gloamwood. Tamsin, the highlands. Garrick, the caldera. Nell, the coast. Fen, the deep.','The thirteenth, Wren, was given no land. Master Venn says Wren will "keep the door".','I asked him what door. He said, "Pray you never find out."']},
+ {id:'walk',o:4,kind:'scroll',at:'v3',title:'What My Grandfather Saw',by:'Told by Elder Qadir, written down by his granddaughter',
+  text:['The apprentices came through Sandhaven on their way out to the lands.','Twelve of them walked together, laughing, arguing about who would have the worst weather.','The thirteenth walked a little behind, carrying nothing, and would not drink from the well until every one of the others had.','My grandfather said he never saw anyone look so happy to be last.']},
+ {id:'pocket',o:5,kind:'scroll',at:'v4',title:'Dunmore\'s Confession',by:'Scratched on a slate in a Redrock mine',
+  text:['I picked Venn\'s pocket the day I met him. He let me.','Inside was a folded note that said: You\'ll do.','I\'ve spent every year since trying to deserve it.','Wren knew. Wren always knew. Wren never said a word to him about it, and that is the only reason I stayed.']},
+ {id:'decree',o:6,kind:'scroll',at:'crown',title:'A Royal Decree',by:'Nailed to a broken pillar in Crown Hollow',
+  text:['By order of Oren, King of Meadowvale under the Thirteen Wards:','Let it be known that the King will not die, and will not forget.','The court magician has found the door. The King goes to it tonight.','Let every bell in the kingdom be rung.']},
+ {id:'flower',o:7,kind:'scroll',at:'v5',title:'A Letter Pressed with a Flower',by:'Tucked into a book in Verdance',
+  text:['Wren,','You keep saying it was your fault. The King asked you for a way. You found one. You told him exactly what it would cost and he said yes.','You were kind to a frightened man. That is not a crime.','Come and see the spring with me before you do whatever it is Venn won\'t tell the rest of us about.','— Ysmay']},
+ {id:'hollowing',o:8,kind:'scroll',at:'v2',title:'A Soldier\'s Letter Home',by:'Kept in a Hearthmoor chest for forty years',
+  text:['We marched to Crown Hollow to stop it. We were too late.','The palace was gone, folded into the ground like a letter. The King was still on his throne. He smiled at us.','He didn\'t know our names. He didn\'t know his own.','The worst of it is that he looked happy.']},
+ {id:'echo',o:9,kind:'echo',at:'crown',title:'The King\'s Echo',by:'A voice that lingers in Crown Hollow',
+  text:['I wanted to remember everything. Every face. Every morning. Forever.','The magician told me what it would cost. I said I would pay it.','I did not understand that the door would take its price from everyone.','Who are you? You have a kind face. I think I knew someone with a kind face.']},
+ {id:'report',o:10,kind:'scroll',at:'v6',title:'Report from Highwatch',by:'Military dispatch, day three after the Hollowing',
+  text:['The Rift is contained. Thirteen Wardens bound, thirteen wards holding.','Master Venn reports that the seal needs a keeper, someone who will hold the last of it by forgetting.','Master Venn has requested a bed be made up in the top room of the Old Tower, and that no one ask whose.','No one asked. We all knew.']},
+ {id:'forge',o:11,kind:'scroll',at:'v7',title:'Brenna\'s Note',by:'Burned into a board above the Cinderholm forge',
+  text:['Venn says a ward needs something to remember, or it forgets what it\'s for.','I gave mine the first fire I ever lit.','I don\'t remember it now. I\'m told that\'s normal.','I\'m told a lot of things are normal. Wren gave theirs everything, and nobody will tell me what\'s normal about that.']},
+ {id:'bottle',o:12,kind:'scroll',at:'v8',title:'A Message in a Bottle',by:'Washed up near Saltmere Light',
+  text:['If the tide brings this back to me, I\'ll know the wards still hold.','If it doesn\'t, then hello, whoever you are.','Is Wren still asleep? Tell them Nell says the sea came back. Tell them it always comes back.','Tell them we didn\'t forget them, even if they forgot us.']},
+ {id:'notes',o:13,kind:'scroll',at:'v9',title:'Fen\'s Laboratory Notes',by:'Sporewick, written in very small handwriting',
+  text:['Forgetting can be made. Venn wanted it gentle.','A memory removed is not destroyed. It goes somewhere. It is held.','I asked Venn where Wren\'s would go. He looked at the floor for a long time and said, "Somewhere safe. Somewhere high."','I think he meant the storm.']},
+ {id:'sister',o:14,kind:'scroll',at:'aeloria',title:'A Letter Never Answered',by:'In Queen Seraphine\'s writing desk',
+  text:['Oren,','I have taken the court up into the sky. I could not stay and watch my own brother smile at me like a stranger.','The apprentice who opened the door came to me before the end and asked my forgiveness. I gave it. I still do not know if I should have.','If any part of you is still in there, I have left a window open.']},
+ {id:'pip',o:15,kind:'scroll',at:'stones',title:'Pip\'s List',by:'Folded very small and hidden in the Standing Stones',
+  text:['Things I am not allowed to tell the sleeper:','1. Their name.','2. Whose bed that was.','3. Why I cried when they laughed for the first time.','Things I am allowed to tell them: everything else.','That is not very much, and I talk a lot to cover it.']},
+ // the Warden stones: who bound each one, and what they gave to hold it
+ {id:'w_rimefang',o:16,kind:'stone',at:'g:rimefang',title:'The Wolf\'s Stone',by:'Carved at the lair of Rimefang',text:['Here Halvard bound the wolf of winter,','and gave it the memory of his mother\'s voice,','so that it would never be lonely in the snow.']},
+ {id:'w_pyraxis',o:17,kind:'stone',at:'g:pyraxis',title:'The Salamander\'s Stone',by:'Carved at the lair of Pyraxis',text:['Here Brenna bound the great salamander,','and gave it the first fire she ever lit,','so that it would know warmth is a gift and not a weapon.']},
+ {id:'w_sekhmara',o:18,kind:'stone',at:'g:sekhmara',title:'The Queen\'s Stone',by:'Carved at the lair of Sekhmara',text:['Here Qasim bound the queen beneath the dunes,','and gave her the taste of water after three days without,','so that she would guard every well in the desert.']},
+ {id:'w_mothermire',o:19,kind:'stone',at:'g:mothermire',title:'The Mire\'s Stone',by:'Carved at the lair of Mother Mire',text:['Here Odile bound the old gator of the swamp,','and gave it a lullaby,','so that it would sleep, and let the travellers pass.']},
+ {id:'w_prismwarden',o:20,kind:'stone',at:'g:prismwarden',title:'The Warden\'s Stone',by:'Carved at the lair of the Prism Warden',text:['Here Lio bound the keeper of the singing stone,','and gave it the colour of his sister\'s eyes,','which he has not seen since.']},
+ {id:'w_kharr',o:21,kind:'stone',at:'g:kharr',title:'The Bandit\'s Stone',by:'Carved at the lair of Kharr',text:['Here Dunmore bound the bandit king,','and gave him the day he stopped being a thief,','so that he would know it could be done.']},
+ {id:'w_thornwood',o:22,kind:'stone',at:'g:thornwood',title:'The Elder\'s Stone',by:'Carved at the lair of Elder Thornwood',text:['Here Ysmay bound the heart of the wilds,','and gave it her first spring,','so that it would always come back.']},
+ {id:'w_bonetyrant',o:23,kind:'stone',at:'g:bonetyrant',title:'The Tyrant\'s Stone',by:'Carved at the lair of the Bone Tyrant',text:['Here Corvin bound the lord of the Gloamwood,','and gave it the name of everyone he had ever buried,','so that none of them would be forgotten.']},
+ {id:'w_stormbeak',o:24,kind:'stone',at:'g:stormbeak',title:'The Matriarch\'s Stone',by:'Carved at the lair of Stormbeak',text:['Here Tamsin bound the mother of the high winds,','and gave her the feeling of falling and being caught.']},
+ {id:'w_ashmaw',o:25,kind:'stone',at:'g:ashmaw',title:'The Devourer\'s Stone',by:'Carved at the lair of Ashmaw',text:['Here Garrick bound the wyvern of the caldera,','and gave it his fear,','so that he could finally go home without it.']},
+ {id:'w_kragmaw',o:26,kind:'stone',at:'g:kragmaw',title:'The Coast\'s Stone',by:'Carved at the lair of Kragmaw',text:['Here Nell bound the terror of the reef,','and gave it the sound of the tide coming back in.']},
+ {id:'w_sporemother',o:27,kind:'stone',at:'g:sporemother',title:'The Deep\'s Stone',by:'Carved at the lair of the Sporemother',text:['Here Fen bound the root of the deep,','and gave it the knowledge of how to forget,','because someone had to remember how.']},
+ {id:'w_seraph',o:28,kind:'stone',at:'g:seraph',title:'The Storm\'s Stone',by:'Carved at the lair of the Tempest Seraph',text:['Here, last of all, Wren bound the storm,','and gave it everything they were.','Then Wren went down to the Old Tower, lay down in the top room,','and slept.']},
+ {id:'venn',o:29,kind:'scroll',at:'tower2',title:'The Last Page of Venn\'s Journal',by:'Left in the Old Tower, to be read when the Wardens are free',
+  text:['Wren,','If you are reading this, the wards failed, and Pip woke you, and you do not remember me. That is all right. I was the first thing you gave away.','You opened the door because a frightened king asked you to, and you were too kind to say no. Then you closed it with everything you had.','The Rift is held by the Wardens, and the Wardens are held by memory: twelve of your friends\', and all of yours. Free the last of them and what is yours comes home.','I am sorry I could not be the one to wake you. Pip insisted. Pip always insists.','You were the best of them. Do not let anyone tell you otherwise. Least of all yourself.','— Aldous']}
+];
+const LORE_N=LORE.length;
+const LR={items:[],built:false,open:false};
+function loreSpot(L){const a=L.at;let x,z,sky=false;
+  if(a==='tower'){x=TOWER.x+Math.cos(TOWER_DOOR)*4.6+1.2;z=TOWER.z+Math.sin(TOWER_DOOR)*4.6;}
+  else if(a==='tower2'){x=TOWER.x+Math.cos(TOWER_DOOR)*4.6-1.2;z=TOWER.z+Math.sin(TOWER_DOOR)*4.6;}
+  else if(a==='crown'){const k=L.kind==='echo'?1:-1;x=CROWN.x+k*4;z=CROWN.z+(L.kind==='echo'?2:-6);}
+  else if(a==='stones'){x=STONES.x+2;z=STONES.z+2;}
+  else if(a==='aeloria'){x=KING.px+5;z=KING.pz-4;sky=true;}
+  else if(a[0]==='v'){const v=VILLAGES[+a.slice(1)];const ang=(v.yaw||0)+2.4;x=v.x+Math.cos(ang)*7;z=v.z+Math.sin(ang)*7;}
+  else if(a.startsWith('g:')){const G=GUARDS.find(g=>g.id===a.slice(2));if(!G)return null;x=G.x+G.r*0.62;z=G.z+2;sky=!!G.sky;}
+  return {x,z,sky};}
+function loreBuild(){
+  if(LR.built||!GD.init)return;LR.built=true;
+  const wood=stdMat(0x5a3e26),parch=stdMat(0xe8dcc0,{roughness:1}),stone=stdMat(0x7a7480,{roughness:0.95}),rune=new T.MeshBasicMaterial({color:cC(0xe2c27a),toneMapped:false}),
+    ghost=new T.MeshStandardMaterial({color:cC(0xc8d8ff),emissive:cC(0x5a6a9a),emissiveIntensity:0.6,transparent:true,opacity:0.45,depthWrite:false});
+  for(const L of LORE){const s=loreSpot(L);if(!s)continue;const y=s.sky?kingH(s.x,s.z):groundH(s.x,s.z),g=new T.Group();g.position.set(s.x,y,s.z);let float=null;
+    if(L.kind==='stone'){const t=cp(g,BOX(0.9,1.5,0.28),stone,[0,0.75,0],[0,0,0.04]);for(let i=0;i<4;i++)cp(g,BOX(0.55-(i%2)*0.15,0.035,0.02),rune,[0,1.15-i*0.2,0.15]);cp(g,BOX(1.05,0.18,0.42),stone,[0,0.09,0]);}
+    else if(L.kind==='echo'){float=cg(g,[0,0,0]);cp(float,new T.ConeGeometry(0.4,1.4,14,1,true),ghost,[0,0.75,0]);cp(float,SPH(0.17,14,10),ghost,[0,1.6,0]);
+      const cr=cg(float,[0,1.82,0]);for(let i=0;i<5;i++)cp(cr,CON(0.03,0.12,4),ghost,[Math.cos(i*1.256)*0.12,0,Math.sin(i*1.256)*0.12]);}
+    else{cp(g,CYL(0.05,0.07,0.95,8),wood,[0,0.47,0]);cp(g,BOX(0.5,0.05,0.36),wood,[0,0.97,0],[-0.35,0,0]);float=cg(g,[0,1.35,0]);cp(float,CYL(0.07,0.07,0.42,12),parch,[0,0,0],[0,0,Math.PI/2]);for(const sx of[-1,1])cp(float,CYL(0.035,0.035,0.5,8),wood,[sx*0.02,0,0],[0,0,Math.PI/2]);}
+    const gl=new T.Sprite(new T.SpriteMaterial({map:glowTex,color:cC(L.kind==='echo'?0xb8c8ff:0xffd890),blending:T.AdditiveBlending,depthWrite:false,transparent:true,opacity:0.6,toneMapped:false}));gl.scale.set(1.4,1.4,1);gl.position.y=L.kind==='stone'?1.2:1.35;g.add(gl);
+    stylizeProp(g);scene.add(g);LR.items.push({L,g,float,gl,x:s.x,z:s.z,y,sky:s.sky});}
+  loreRefresh();
+}
+function loreFound(id){return (SKILL.lore||[]).includes(id);}
+function loreAvailable(L){return L.id!=='venn'||(SKILL.guards||[]).length>=13||(SKILL.guards||[]).includes('seraph');}
+function loreRefresh(){for(const it of LR.items){const f=loreFound(it.L.id),av=loreAvailable(it.L);it.g.visible=av&&(!it.sky||SKYCTX);it.gl.material.opacity=f?0.12:0.6;}}
+function updateLore(dt){
+  if(!LR.built){loreBuild();return;}
+  for(const it of LR.items){const vis=loreAvailable(it.L)&&(it.sky===SKYCTX);it.g.visible=vis;if(!vis)continue;
+    const d=Math.hypot(player.x-it.x,player.z-it.z);if(d>120)continue;const f=loreFound(it.L.id);
+    if(it.float){it.float.position.y=(it.L.kind==='echo'?0.1:1.35)+Math.sin(time*1.6+it.x)*0.06;it.float.rotation.y+=dt*(f?0.2:0.8);}
+    if(!f&&Math.random()<0.25)PA.spawn(it.x+fr(-0.5,0.5),it.y+fr(0.6,1.8),it.z+fr(-0.5,0.5),0,fr(0.2,0.5),0,fr(1,2),0.08,0.03,1,0.9,0.6,1,1,0.8,0.4,0,0);
+    if(!f&&d<2.2&&!player.dead&&!BROOM.on&&!LR.open&&!STC.open&&!homeOpen){if(!SKILL.lore)SKILL.lore=[];SKILL.lore.push(it.L.id);loreRefresh();saveGame();
+      feed('Found: '+it.L.title+' ('+SKILL.lore.length+' of '+LORE_N+'). Read it again any time in your Journal.','#f0d8a0');SFX.page&&SFX.page();
+      achEv('lore',SKILL.lore.length);loreOpen(it.L);}}
+}
+function loreOpen(L){const el=$('lore');LR.open=true;el.querySelector('h2').textContent=L.title;el.querySelector('.lo-by').textContent=L.by;const b=el.querySelector('.lo-body');b.innerHTML='';
+  for(const t of L.text){const p=document.createElement('p');p.textContent=t;b.appendChild(p);}el.classList.toggle('stone',L.kind==='stone');el.classList.toggle('echo',L.kind==='echo');
+  el.hidden=false;victoryOpen=true;if(document.pointerLockElement)try{document.exitPointerLock();}catch(_){}updatePause();if(SET.narrate!==false&&window.speechSynthesis){try{narrSay(L.text.join(' '));}catch(_){}}}
+function loreClose(){$('lore').hidden=true;LR.open=false;victoryOpen=false;try{speechSynthesis.cancel();}catch(_){}updatePause();if(!homeOpen&&!panelOpen&&!touchMode&&!lockFailed&&!GP.on)requestLock();}
+function renderJournal(){const got=LORE.filter(L=>loreFound(L.id)).sort((a,b)=>a.o-b.o);
+  let h='<div class="phead"><span class="pl">Journal</span><span class="px">'+got.length+' of '+LORE_N+' pieces found</span></div>';
+  if(!got.length)h+='<p class="jr-empty">Pieces of an older story are scattered across Meadowvale: notes, letters, carved stones, and stranger things. Look for a soft golden glow.</p>';
+  h+='<div class="items">'+got.map(L=>'<button type="button" class="it jr" data-lore="'+L.id+'"><span class="jr-k">'+(L.kind==='stone'?'Stone':L.kind==='echo'?'Echo':'Writing')+'</span><span><b>'+L.title+'</b><p>'+L.by+'</p></span><span></span></button>').join('')+'</div>';
+  if(got.length&&got.length<LORE_N)h+='<p class="jr-empty">'+(LORE_N-got.length)+' more '+(LORE_N-got.length===1?'piece is':'pieces are')+' still out there.</p>';
+  return h;}
 function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   if(e.state==='dead'||e.under)return;e.hitT=time;if(e.base==='beetle'&&(e.state==='charge'||e.state==='roar'))dmg*=0.3;
   if(e.T.boss){if(o)o=Object.assign({},o,{freeze:o.freeze?1.5:0,root:o.root?1.5:0,stun:0});kx=(kx||0)*0.3;kz=(kz||0)*0.3;ky=0;
@@ -7206,6 +7321,8 @@ $('savecopy').addEventListener('click',()=>{const c=saveCode(),t=$('savecode');t
 $('saveload').addEventListener('click',()=>{const m=loadCode($('savecode').value);if(m)$('savemsg').textContent=m;});
 $('saverest').addEventListener('click',()=>{const m=restoreBackup();if(m)$('savemsg').textContent=m;});
 $('stgo').addEventListener('click',()=>storyNext());
+$('loclose').addEventListener('click',e=>{e.stopPropagation();loreClose();});$('lore').addEventListener('click',e=>{if(e.target.id==='lore')loreClose();});
+window.addEventListener('keydown',e=>{if(!LR.open)return;if(e.code==='Escape'||e.code==='Enter'||e.code==='Space'||e.code==='KeyE'){e.preventDefault();e.stopImmediatePropagation();loreClose();}},true);
 $('narr').addEventListener('click',e=>{if(e.target.closest('.nr-skip'))narrSkip();else storyNext();});
 if(COARSE)$('narr').querySelector('.nr-hint').textContent='Tap to continue';
 for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.addEventListener('click',()=>{SET.fairy=b.dataset.fy==='1';saveSet();syncSettingsUI();});
@@ -8157,6 +8274,7 @@ function renderPanel(){
   if(panelTab==='shop'&&!shopNPC)panelTab='bag';
   document.querySelectorAll('.ptab').forEach(b=>{b.classList.toggle('on',b.dataset.tab===panelTab);if(b.dataset.tab==='shop')b.hidden=!shopNPC;});
   const P=$('pbody');let h='';
+  if(panelTab==='journal'){P.innerHTML=renderJournal();P.querySelectorAll('[data-lore]').forEach(b=>b.addEventListener('click',()=>{const L=LORE.find(q=>q.id===b.dataset.lore);if(L)loreOpen(L);}));return;}
   const head='<div class="phead"><span class="pl">Level '+SKILL.level+'</span><span class="px">'+SKILL.xp+' / '+xpNeed(SKILL.level)+' XP</span><span class="pg"><img src="'+iconURL('gold')+'" alt="">'+SKILL.gold+'</span><span class="pp">'+SKILL.points+' skill point'+(SKILL.points===1?'':'s')+'</span></div>';
   if(panelTab==='shop'){h=head+renderShop();}
   else if(panelTab==='bag'){
@@ -8373,9 +8491,9 @@ function bkKey(e){const k=e.code;
 /* save */
 const SAVEKEY='wizard-meadow-save-1';
 function queueSave(){saveT=time+1;}
-function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,tut:SKILL.tut,wxt:WX.t,day:WX.dayNo,combos:SKILL.combos||[],guards:SKILL.guards||[],ng:SKILL.ng||0,story:SKILL.story,storySeen:SKILL.storySeen,riftMax:SKILL.riftMax||0,v2:1}));}catch(_){}}
+function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,tut:SKILL.tut,wxt:WX.t,day:WX.dayNo,combos:SKILL.combos||[],lore:SKILL.lore||[],guards:SKILL.guards||[],ng:SKILL.ng||0,story:SKILL.story,storySeen:SKILL.storySeen,riftMax:SKILL.riftMax||0,v2:1}));}catch(_){}}
 function loadGame(){try{const d=JSON.parse(localStorage.getItem(SAVEKEY)||'null');if(!d||d.v!==1)return false;
-  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:(d.rank||[]).concat(Array(100).fill(0)).slice(0,100),gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},d.up||{}),tomesBought:d.tb||0,equip:d.equip||null,study:d.study||null,ws:d.ws||[],chests:d.chests||[],tut:d.tut==null?99:d.tut,combos:d.combos||[],guards:d.guards||[],ng:d.ng||0,story:d.story,storySeen:d.storySeen,riftMax:d.riftMax||0});
+  Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:(d.rank||[]).concat(Array(100).fill(0)).slice(0,100),gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},d.up||{}),tomesBought:d.tb||0,equip:d.equip||null,study:d.study||null,ws:d.ws||[],chests:d.chests||[],tut:d.tut==null?99:d.tut,combos:d.combos||[],lore:d.lore||[],guards:d.guards||[],ng:d.ng||0,story:d.story,storySeen:d.storySeen,riftMax:d.riftMax||0});
   if(d.wxt!=null){WX.t=d.wxt;WX.dayNo=d.day||1;}
   if(d.newgp){d.newgp=0;for(const id of['grimoire','sparks','imps','village'])SKILL.quests[id]={state:'active',prog:0};after(2.5,()=>banner('New Game+ '+SKILL.ng,'Monsters are stronger · rewards are richer'));}
   if(!d.v2){SKILL.inv.dust=(SKILL.inv.dust||0)+4;if(!SKILL.quests.grimoire)SKILL.quests.grimoire={state:'active',prog:0};}
@@ -8383,7 +8501,7 @@ function loadGame(){try{const d=JSON.parse(localStorage.getItem(SAVEKEY)||'null'
   if(!SKILL.equip){SKILL.equip=[];SKILL.rank.forEach((r,i)=>{if(r&&SKILL.equip.length<5)SKILL.equip.push(i);});}while(SKILL.equip.length<5)SKILL.equip.push(-1);
   for(const w of WAYSTONES){if(SKILL.ws.includes(w.name))w.found=true;setWayLit(w);}COMBAT.kills=d.kills||0;return true;}catch(_){return false;}}
 function resetProgress(){try{localStorage.removeItem(SAVEKEY);}catch(_){}
-  Object.assign(SKILL,{tut:0,level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[],combos:[],guards:[],ng:0,story:0,storySeen:-1,riftMax:0});
+  Object.assign(SKILL,{tut:0,level:1,xp:0,points:0,rank:[1].concat(Array(99).fill(0)),gold:0,inv:{dust:4},quests:{},up:{robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},tomesBought:0,equip:[0,-1,-1,-1,-1],study:null,ws:[],chests:[],combos:[],lore:[],guards:[],ng:0,story:0,storySeen:-1,riftMax:0});
   for(const G of GUARDS)G.beaten=false;if(GUARDS.length)refreshLairs();
   for(const c of CHESTS)if(!c.camp){c.opened=false;c.open=0;chestMatrix(c);}refreshGlow();
   for(const w of WAYSTONES){w.found=w.name==='Meadow Crossing';setWayLit(w);}COMBAT.kills=0;
@@ -8796,7 +8914,7 @@ function frame(now){
   updateEnemies(dt);updateCreatureKit(dt);updateRPG(dt);meleeCd-=dt;
   if(hurtV>0.002){hurtEl.style.opacity=hurtV.toFixed(3);hurtV*=Math.exp(-dt*2.2);}else if(hurtV!==0){hurtV=0;hurtEl.style.opacity='0';}
   if(player.dead&&hurtEl.style.opacity!=='0.6'){hurtEl.style.opacity='0.6';}
-  updateEmitters(dt);updateWorldFx(dt);updateGuardians(dt);updateEndgame(dt);updateRunes(dt);updateFxPool(dt);updateDmgNums(dt);updateFlowers(dt);updateTrees(dt);updateCrystals(dt);syncPieces();
+  updateEmitters(dt);updateWorldFx(dt);updateGuardians(dt);updateLore(dt);updateEndgame(dt);updateRunes(dt);updateFxPool(dt);updateDmgNums(dt);updateFlowers(dt);updateTrees(dt);updateCrystals(dt);syncPieces();
   if(impactN>0&&time>nextThud){
     const ix=impactX/impactN,iz=impactZ/impactN;SFX.thud(Math.min(0.5,impactAcc*0.018),ix,iz);nextThud=time+0.075;
     for(let q=0;q<Math.min(4,impactN);q++)PB.spawn(ix+fr(-1.2,1.2),groundH(ix,iz)+0.2,iz+fr(-1.2,1.2),fr(-1,1),fr(0.4,1.4),fr(-1,1),fr(1.2,2.6),0.5,fr(1.6,2.6),0.62,0.58,0.5,0.22,0.7,0.67,0.6,0,1);
