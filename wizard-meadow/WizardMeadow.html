@@ -8066,20 +8066,34 @@ function updatePrompt(){
 }
 /* elder dialog */
 let dialogOpen=false,dialogQuest=null;
+/* every elder has their own voice */
+const VOICE={
+  Brookhollow:{hi:"You're the one from the tower? Good. We've been short of help and long on monsters.",offer:["I won't dress it up. This needs doing.","Here's the next one. Same as before: go, do it, come back."],wait:"Still at it?",done:"That's everything I had for you. Go and see the other villages. They'll be worse off than we are."},
+  Eastmere:{hi:"Ah! A wizard. Thank goodness. I've been writing letters to nobody for weeks.",offer:["I have a small, ah, problem. Several, actually. Here's the first.","Another one, I'm afraid. I've numbered them."],wait:"Any luck? No pressure. Some pressure.",done:"I've run out of problems. That has never happened before. I don't know what to do with my hands."},
+  Hearthmoor:{hi:"Stamp the snow off your boots. We don't waste fire on idlers, so let's see what you're good for.",offer:["There's work. It's cold work.","More work. Wrap up."],wait:"Well?",done:"You've earned your place by the fire. Sit when you like."},
+  Sandhaven:{hi:"Water first, then talk. That's how it's done here. Sit.",offer:["The desert takes. Help me take something back.","Another errand, if your feet are still willing."],wait:"The sand is patient. I am a little less so.",done:"May your waterskin never run dry, friend."},
+  Redrock:{hi:"Mind the edge. People who don't, don't come back up.",offer:["Got a job. It pays.","Another job. Still pays."],wait:"Done yet?",done:"Nothing left for you to dig up round here. Good work."},
+  Verdance:{hi:"The trees told me you'd come. Well, one of them did. The others weren't sure.",offer:["The forest asks something of you.","The forest has another favour to ask."],wait:"The forest is listening for news.",done:"The Wilds breathe easier tonight. So do I."},
+  Highwatch:{hi:"Highwatch. Best view in the world and the worst wind. State your business.",offer:["I've a mission, if you've the stomach for it.","New orders."],wait:"Report.",done:"At ease, wizard. You've done more than my old company ever managed."},
+  Cinderholm:{hi:"Talk fast. The forge doesn't wait and neither do I.",offer:["I need something. You can get it.","Something else. Same terms."],wait:"Still waiting on you.",done:"Good work. I'd say it twice, but I'm busy."},
+  Saltmere:{hi:"Ahoy, wizard. Tide's in and trouble's up.",offer:["Got a job that needs a strong arm and a stronger stomach.","One more voyage, if you're game."],wait:"How's the sailing?",done:"You've earned a drink. I'm buying, as soon as I find my purse."},
+  Sporewick:{hi:"Careful where you step. Some of the floor is alive, and some of it is my lunch.",offer:["I have an experiment. You're in it.","Phase two of the experiment. Don't worry about phase one."],wait:"Results?",done:"Fascinating. You've exceeded every prediction. Mostly mine."},
+  Aeloria:{hi:"You came up through the storm. Few would. Speak.",offer:["Aeloria has need of you.","Once more, wizard. Aeloria asks."],wait:"What news from the isles?",done:"Aeloria remembers its friends. You will always be welcome here."}
+};
 function openDialog(o){
   if(!o)return;if(o.chest){openChest(o);return;}dialogOpen=true;dialogQuest=null;if(locked)try{document.exitPointerLock();}catch(_){}
-  const v=o.v,dq=$('dquest'),acc=$('daccept');$('dname').textContent=o.name+' of '+v.name;
+  const v=o.v,dq=$('dquest'),acc=$('daccept'),VO=VOICE[v.name]||{};$('dname').textContent=o.name+' of '+v.name;
   if(v.fear>time){$('dtext').textContent='Stay back! You have blood on your hands. Leave '+v.name+' alone.';dq.innerHTML='';acc.hidden=true;}
   else if(o.merchant){dialogOpen=false;openShop(o);return;}
   else{
     questEvent('talk',null,1);
     const id=nextOffer(v),active=v.chain.find(q=>SKILL.quests[q]&&SKILL.quests[q].state==='active');
     if(id){const q=QUESTS[id];
-      if(q.minLevel&&SKILL.level<q.minLevel){$('dtext').textContent=(q.goal.type==='boss'?'The Hollow King stirs in Crown Hollow, but you are not ready yet.':'“'+q.name+'” is work for a stronger wizard.')+' Come back when you reach level '+q.minLevel+'.';dq.innerHTML='';acc.hidden=true;}
-      else{dialogQuest=id;$('dtext').textContent=id==='village'?'Welcome, young wizard. Monsters circle our village. Will you help us?':'I have a task for you, if you are willing.';
-        dq.innerHTML='<b>'+q.name+'</b><p>'+q.desc+'</p><span>Reward: '+q.reward.xp+' XP'+(q.reward.gold?' · '+q.reward.gold+' gold':'')+(q.reward.items?' · '+Object.keys(q.reward.items).map(k=>q.reward.items[k]+' '+ITEMS[k].name).join(' · '):'')+'</span>';acc.hidden=false;}}
-    else if(active){$('dtext').textContent='How goes it? '+QUESTS[active].name+': '+questProgress(active)+'.';dq.innerHTML='';acc.hidden=true;}
-    else{$('dtext').textContent=COMBAT.bossDown?'The King is gone. Meadowvale owes you everything.':'You have done all I asked. Thank you, wizard.';dq.innerHTML='';acc.hidden=true;}
+      if(q.minLevel&&SKILL.level<q.minLevel){$('dtext').textContent=(q.goal.type==='boss'?'The Hollow King stirs in Crown Hollow, but you are not ready yet.':'Not yet. “'+q.name+'” would chew you up.')+' Come back when you reach level '+q.minLevel+'.';dq.innerHTML='';acc.hidden=true;}
+      else{dialogQuest=id;$('dtext').textContent=id==='village'?(VO.hi||'Welcome, wizard. We could use the help.'):(VO.offer?VO.offer[Math.min(VO.offer.length-1,v.chain.indexOf(id)>2?1:0)]:'There is work, if you want it.');
+        dq.innerHTML='<b>'+q.name+'</b><p>'+q.desc+'</p><span>Reward: '+[q.reward.xp+' XP'].concat(q.reward.gold?[q.reward.gold+' gold']:[],q.reward.items?Object.keys(q.reward.items).map(k=>q.reward.items[k]+' '+ITEMS[k].name):[]).join(', ')+'</span>';acc.hidden=false;}}
+    else if(active){$('dtext').textContent=(VO.wait||'How goes it?')+' ('+QUESTS[active].name+': '+questProgress(active)+')';dq.innerHTML='';acc.hidden=true;}
+    else{$('dtext').textContent=VO.done||(COMBAT.bossDown?'The King is gone. Meadowvale owes you everything.':'You have done all I asked. Thank you, wizard.');dq.innerHTML='';acc.hidden=true;}
   }
   $('dialog').hidden=false;updatePause();
 }
