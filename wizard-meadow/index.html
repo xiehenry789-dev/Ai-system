@@ -2528,13 +2528,14 @@ finalizePieces();SKYCTX=false;
   for(let i=0;i<700;i++){const v=rnd()<0.5?255:60;x.fillStyle='rgba('+v+','+v+','+v+','+rr(0.03,0.1)+')';x.fillRect(rnd()*128,rnd()*128,rr(1,7),rr(1,3));}
   x.strokeStyle='rgba(40,36,30,0.35)';x.lineWidth=1;for(let i=0;i<4;i++){x.beginPath();let px=rnd()*128,py=rnd()*128;x.moveTo(px,py);for(let k=0;k<4;k++){px+=rr(-16,16);py+=rr(-16,16);x.lineTo(px,py);}x.stroke();}
   const g=x.createLinearGradient(0,0,0,128);
-  x.strokeStyle='rgba(30,26,22,0.55)';x.lineWidth=7;x.strokeRect(0,0,128,128);
-  x.strokeStyle='rgba(30,26,22,0.25)';x.lineWidth=16;x.strokeRect(0,0,128,128);
+  x.strokeStyle='rgba(30,26,22,0.4)';x.lineWidth=3;x.strokeRect(0,0,128,128);
+  x.strokeStyle='rgba(30,26,22,0.12)';x.lineWidth=12;x.strokeRect(0,0,128,128);
+  x.strokeStyle='rgba(255,250,240,0.18)';x.lineWidth=2;x.beginPath();x.moveTo(4,124);x.lineTo(4,4);x.lineTo(124,4);x.stroke();
   const tex=new T.CanvasTexture(c);tex.encoding=T.sRGBEncoding;
   pieceMesh=new T.InstancedMesh(new T.BoxGeometry(1,1,1),new T.MeshStandardMaterial({map:tex,roughness:0.9,metalness:0}),MAXP);
   {const cullV=u=>sh=>{sh.uniforms.uCull=u;sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nuniform vec4 uCull;')
       .replace('#include <project_vertex>','#include <project_vertex>\n{vec4 ic=modelMatrix*instanceMatrix*vec4(0.0,0.0,0.0,1.0);if(distance(ic.xz,uCull.xy)>uCull.z)gl_Position=vec4(0.0,0.0,-2.0,1.0);}');};
-    pieceMesh.material.onBeforeCompile=cullV(CULL.main);const dm=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking});dm.onBeforeCompile=cullV(CULL.shad);pieceMesh.customDepthMaterial=dm;}
+    {const cu=cullV(CULL.main);pieceMesh.material.onBeforeCompile=sh=>{cu(sh);blockShade(sh);};}const dm=new T.MeshDepthMaterial({depthPacking:T.RGBADepthPacking});dm.onBeforeCompile=cullV(CULL.shad);pieceMesh.customDepthMaterial=dm;}
   const col=new T.Color();
   for(let i=0;i<pn;i++){writeMatrix(i);col.setRGB(pcol[i*3],pcol[i*3+1],pcol[i*3+2]);pieceMesh.setColorAt(i,col);}
   pieceMesh.count=pn;pieceMesh.frustumCulled=false;pieceMesh.castShadow=true;pieceMesh.receiveShadow=true;scene.add(pieceMesh);
@@ -5622,6 +5623,26 @@ CRE.mummy.build=function(T0){const g=new T.Group(),wrap=stdMat(0xd2c7a4,{roughne
   const lash=cg(body,[0.34,0.1,0.1]);cp(lash,BOX(0.08,0.02,1),wrap,[0,0,0.5]);lash.scale.z=0.01;
   return {g,mats:[wrap,old,dk],limbs:{},head,body,L,strips,lash};};
 NEWB.yeti=CRE.yeti.build;NEWB.bandit=CRE.bandit.build;NEWB.panther=CRE.panther.build;NEWB.griffin=CRE.griffin.build;NEWB.mummy=CRE.mummy.build;
+/* building blocks: wood shows its grain, stone its weathering, and every block is shaded like the creatures */
+function blockShade(sh){
+  sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vPW;varying vec3 vPL;varying vec3 vPN;')
+    .replace('#include <project_vertex>','#include <project_vertex>\n{vPW=(modelMatrix*instanceMatrix*vec4(transformed,1.0)).xyz;vec3 sc=vec3(length(instanceMatrix[0].xyz),length(instanceMatrix[1].xyz),length(instanceMatrix[2].xyz));vPL=transformed*sc;vPN=normalize(mat3(instanceMatrix)*objectNormal);}');
+  sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vPW;varying vec3 vPL;varying vec3 vPN;\n'+
+    'float bH(vec3 p){return fract(sin(dot(p,vec3(127.1,311.7,74.7)))*43758.5453);}\n'+
+    'float bN(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);return mix(mix(mix(bH(i),bH(i+vec3(1,0,0)),f.x),mix(bH(i+vec3(0,1,0)),bH(i+vec3(1,1,0)),f.x),f.y),mix(mix(bH(i+vec3(0,0,1)),bH(i+vec3(1,0,1)),f.x),mix(bH(i+vec3(0,1,1)),bH(i+vec3(1,1,1)),f.x),f.y),f.z);}')
+    .replace('#include <color_fragment>','#include <color_fragment>\n{vec3 c=diffuseColor.rgb;float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),sat=mx-mn,lum=dot(c,vec3(0.3,0.59,0.11));'+
+      'vec3 an=abs(normalize(vPL+1e-4)*0.0+vPN);float n1=bN(vPW*2.5),n2=bN(vPW*9.0),n3=bN(vPW*31.0);'+
+      'float wood=smoothstep(0.05,0.12,sat)*step(c.b*1.3,c.r)*(1.0-smoothstep(0.42,0.6,lum));'+
+      'float along=an.y>0.6?(abs(vPL.x)>abs(vPL.z)?vPL.z:vPL.x):vPL.y;float gr=sin(along*48.0+n1*7.0+n2*2.0)*0.5+0.5;'+
+      'c*=mix(1.0,0.8+0.26*gr+0.1*n3,wood);'+
+      'float stone=1.0-smoothstep(0.05,0.11,sat);c*=mix(1.0,0.78+0.3*n1+0.12*n3-0.15*smoothstep(0.62,0.78,n2),stone);'+
+      'float plaster=smoothstep(0.55,0.7,lum)*(1.0-stone);c*=mix(1.0,0.9+0.12*n2,plaster);'+
+      'c*=mix(0.62,1.04,smoothstep(-0.8,0.7,vPN.y));diffuseColor.rgb=c;}');
+}
+function stylizeProp(g){g.updateMatrixWorld(true);g.traverse(o=>{if(!o.isMesh||o.userData.styled)return;o.userData.styled=1;o.castShadow=true;const mt=o.material;
+  if(mt&&mt.isMeshStandardMaterial&&!mt.userData.styled){mt.userData.styled=1;mt.onBeforeCompile=monsterShade;mt.customProgramCacheKey=()=>'monsterShade';}
+  if(mt&&!mt.transparent&&!mt.isMeshBasicMaterial&&o.geometry&&o.geometry.attributes.normal){if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();o.getWorldScale(_sv);
+    const r=o.geometry.boundingSphere.radius*Math.max(_sv.x,_sv.y,_sv.z);if(r>0.1){const h=new T.Mesh(o.geometry,OUTLINE_MAT);h.userData.styled=1;h.castShadow=false;o.add(h);}}});}
 /* treant roots: a warning ring, then thorny roots burst up and grab */
 const ROOTS=[],ROOT_GEO=new T.ConeGeometry(0.2,1.9,6),ROOT_MAT=stdMat(0x5a3e26,{roughness:0.9});
 function rootsAt(x,z,e){ROOTS.push({x,z,t:0,e,hit:false,g:null});shockRing(x,groundH(x,z)+0.15,z,0x8ac04a,2.4,0.8);}
@@ -7254,18 +7275,44 @@ function updateEnemies(dt){
 /* villagers: wander the village, scatter when fighting comes near */
 const VILLAGERS=[];
 function buildVillager(){
-  const g=new T.Group(),cloth=stdMat([0x7a3b2e,0x3e5a7a,0x6a6a3a,0x8a5a2a,0x4e3a6a][Math.floor(Math.random()*5)]),skin=stdMat([0xe2b08c,0xc08a64,0x8a5a3c][Math.floor(Math.random()*3)]),dark=stdMat(0x3a2a1e);
-  const body=new T.Mesh(new T.CylinderGeometry(0.2,0.26,0.75,10),cloth);body.position.y=1.0;g.add(body);
-  const head=new T.Group();head.position.y=1.55;g.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.16,10,8),skin));
-  if(Math.random()<0.5){const h=new T.Mesh(new T.ConeGeometry(0.24,0.22,10),dark);h.position.y=0.15;head.add(h);}
-  else{const h=new T.Mesh(new T.SphereGeometry(0.17,10,6,0,6.283,0,1.4),dark);h.position.y=0.03;head.add(h);}
-  const limbs={};
-  for(const sx of[-1,1]){const arm=new T.Group();arm.position.set(sx*0.26,1.3,0);g.add(arm);const a=new T.Mesh(new T.CylinderGeometry(0.05,0.045,0.55,6),cloth);a.position.y=-0.27;arm.add(a);
-    const leg=new T.Group();leg.position.set(sx*0.1,0.62,0);g.add(leg);const l=new T.Mesh(new T.CylinderGeometry(0.07,0.06,0.62,6),dark);l.position.y=-0.31;leg.add(l);
-    limbs[sx<0?'armL':'armR']=arm;limbs[sx<0?'legL':'legR']=leg;}
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const g=new T.Group(),cloth=stdMat(pick([0x7a3b2e,0x3e5a7a,0x6a6a3a,0x8a5a2a,0x4e3a6a,0x5a6a4a,0x8a6a4a])),under=stdMat(pick([0xd8cbb0,0xb8a888,0x9a8a6a])),skin=stdMat(pick([0xe8bc96,0xd09a74,0xa8704e,0x7a4c32])),
+    pants=stdMat(pick([0x4a3a2a,0x3a3a42,0x5a4a3a])),boot=stdMat(0x2e2016),hairC=stdMat(pick([0x2a1a10,0x5a3a1a,0x8a6a3a,0xc8b89a,0x1a1410,0x9a3a1a])),belt=stdMat(0x3a2414),dark=stdMat(0x1a1210,{roughness:0.3});
+  const s=fr(0.92,1.08),body=cg(g,[0,1.08,0]);
+  cp(body,CYL(0.17,0.21,0.5,14),cloth,[0,0.05,0]);cp(body,SPH(0.19,16,10),cloth,[0,0.28,0],0,[1.05,0.55,0.9]);cp(body,CON(0.3,0.42,14),cloth,[0,-0.32,0]);
+  cp(body,CYL(0.205,0.205,0.06,16),belt,[0,-0.15,0]);cp(body,BOX(0.06,0.05,0.02),stdMat(0xc8a040,{metalness:0.6}),[0,-0.15,0.205]);
+  if(Math.random()<0.45)cp(body,BOX(0.26,0.5,0.02),under,[0,-0.32,0.2],[-0.12,0,0]);
+  cp(body,CYL(0.08,0.09,0.1,10),under,[0,0.38,0]);
+  const head=cg(body,[0,0.55,0]);cp(head,SPH(0.15,18,14),skin,[0,0,0]);cp(head,SPH(0.03,8,6),skin,[0,-0.02,0.15]);
+  for(const sx of[-1,1]){cp(head,SPH(0.018,8,6),dark,[sx*0.055,0.02,0.135]);cp(head,BOX(0.045,0.012,0.012),hairC,[sx*0.055,0.06,0.14]);cp(head,SPH(0.035,8,6),skin,[sx*0.15,0,0],0,[0.5,1,0.8]);}
+  const style=Math.floor(Math.random()*6);
+  if(style===0){cp(head,CYL(0.32,0.3,0.025,20),stdMat(0xd8b868,{roughness:1}),[0,0.1,0]);cp(head,CYL(0.13,0.16,0.12,14),stdMat(0xd8b868,{roughness:1}),[0,0.17,0]);}
+  else if(style===1){cp(head,new T.SphereGeometry(0.165,16,10,0,6.283,0,1.5),hairC,[0,0.02,-0.01]);cp(head,SPH(0.06,8,6),hairC,[0,-0.02,-0.18]);}
+  else if(style===2){cp(head,new T.SphereGeometry(0.17,16,10,0,6.283,0,1.25),cloth,[0,0.02,0]);cp(head,CON(0.05,0.16,8),cloth,[0,0.16,-0.06],[-0.6,0,0]);}
+  else if(style===3){cp(head,new T.SphereGeometry(0.16,16,10,0,6.283,0,1.3),hairC,[0,0.02,-0.01]);cp(head,CON(0.09,0.16,10),hairC,[0,-0.12,0.1],[Math.PI+0.3,0,0]);}
+  else if(style===4){cp(head,new T.SphereGeometry(0.165,16,10,0,6.283,0,1.45),hairC,[0,0.02,-0.02]);for(const sx of[-1,1])cp(head,CYL(0.035,0.02,0.3,8),hairC,[sx*0.12,-0.12,-0.06]);}
+  else{cp(head,new T.SphereGeometry(0.17,16,10,0,6.283,0,1.2),stdMat(0x3a4a5a),[0,0.03,0]);}
+  const limbs={};for(const sx of[-1,1]){const arm=cArm(body,cloth,[sx*0.23,0.22,0],0.58,0.05,skin,0);limbs[sx<0?'armL':'armR']=arm;
+    const leg=cLeg(g,pants,[sx*0.09,0.68,0],0.66,0.065,0.04);cp(leg.knee,CYL(0.07,0.08,0.2,10),boot,[0,-0.27,0.01]);limbs[sx<0?'legL':'legR']=leg;}
+  g.scale.setScalar(s);stylizeProp(g);
   return {g,limbs};
 }
+function buildElder(){
+  const g=new T.Group(),robe=stdMat(0x4b2f6e,{roughness:0.9}),trim=stdMat(0xc8a040,{metalness:0.5,roughness:0.4}),skin=stdMat(0xe2b08c),beard=stdMat(0xe8e4dc,{roughness:1}),hat=stdMat(0x3a2450,{roughness:0.9}),wd=stdMat(0x6b4524),dark=stdMat(0x1a1210);
+  const body=cg(g,[0,0,0]);cp(body,CON(0.42,1.35,16),robe,[0,0.68,0]);cp(body,CYL(0.2,0.2,0.4,14),robe,[0,1.22,0]);cp(body,TOR(0.41,0.025,6,24),trim,[0,0.06,0],[Math.PI/2,0,0]);
+  cp(body,BOX(0.06,1.1,0.02),trim,[0,0.62,0.27],[-0.29,0,0]);cp(body,CYL(0.22,0.22,0.05,16),stdMat(0x3a2414),[0,0.98,0]);
+  const head=cg(g,[0,1.55,0]);cp(head,SPH(0.15,18,14),skin,[0,0,0]);cp(head,SPH(0.032,8,6),skin,[0,-0.02,0.15]);for(const sx of[-1,1]){cp(head,SPH(0.017,8,6),dark,[sx*0.055,0.02,0.135]);cp(head,BOX(0.06,0.018,0.02),beard,[sx*0.055,0.065,0.14],[0,0,sx*0.25]);}
+  cp(head,CON(0.13,0.42,12),beard,[0,-0.24,0.08],[Math.PI-0.12,0,0]);cp(head,SPH(0.06,10,8),beard,[0,-0.06,0.12],0,[1.6,0.6,0.8]);
+  cp(head,CYL(0.28,0.27,0.03,20),hat,[0,0.1,0]);const hc=cp(head,CON(0.16,0.5,14),hat,[0,0.36,-0.02],[-0.18,0,0.1]);cp(head,CYL(0.165,0.165,0.04,16),trim,[0,0.14,0]);
+  const limbs={};for(const sx of[-1,1]){const arm=cArm(g,robe,[sx*0.24,1.3,0],0.58,0.065,skin,0);limbs[sx<0?'armL':'armR']=arm;const leg=cg(g,[sx*0.1,0.3,0]);limbs[sx<0?'legL':'legR']=leg;}
+  const st=cg(limbs.armR.hand,[0,0,0.04]);cp(st,CYL(0.025,0.032,1.7,8),wd,[0,0.2,0]);cp(st,ICO(0.07,0),stdMat(0x9ad8ff,{emissive:cC(0x3a8aff),emissiveIntensity:0.9}),[0,1.08,0]);
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#8c2f22';x.beginPath();x.arc(32,32,26,0,6.283);x.fill();x.strokeStyle='#5a1a12';x.lineWidth=4;x.stroke();
+  x.fillStyle='#f1e6cb';x.font='bold 38px Georgia,serif';x.textAlign='center';x.textBaseline='middle';x.fillText('!',32,34);
+  const marker=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthTest:false,transparent:true,toneMapped:false}));marker.scale.set(0.45,0.45,1);marker.position.y=2.4;marker.renderOrder=29;g.add(marker);
+  stylizeProp(g);
+  return {g,limbs,marker};
+}
+
 function spawnVillagers(){
   for(const v of VILLAGES)for(let i=0;i<6;i++){const m=buildVillager(),a=Math.random()*6.283,r=fr(4,12);
     const o={v,m,x:v.x+Math.cos(a)*r,z:v.z+Math.sin(a)*r,y:0,yaw:Math.random()*6,wp:null,wT:0,flee:0,fx:0,fz:0,phase:Math.random()*6,vx:0,vz:0};
@@ -7732,22 +7779,7 @@ function renderTracker(){
   trackerEl.innerHTML=(main||act.length)?'<h3>Quests <kbd>J</kbd></h3>'+main+act.slice(0,ch?1:2).map(id=>'<div class="tq"><b>'+QUESTS[id].name+'</b><span>'+questProgress(id)+'</span></div>').join(''):'';
 }
 /* villagers: elders, harm and fear */
-function buildElder(){
-  const g=new T.Group(),robe=stdMat(0x4b2f6e),skin=stdMat(0xe2b08c),beard=stdMat(0xeeeeee),hat=stdMat(0x3a2450),wd=stdMat(0x6b4524);
-  const body=new T.Mesh(new T.CylinderGeometry(0.2,0.36,1.3,12),robe);body.position.y=0.65;g.add(body);
-  const head=new T.Group();head.position.y=1.48;g.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.16,10,8),skin));
-  const b=new T.Mesh(new T.ConeGeometry(0.13,0.34,8),beard);b.position.set(0,-0.18,0.09);b.rotation.x=Math.PI;head.add(b);
-  const h=new T.Mesh(new T.ConeGeometry(0.22,0.5,10),hat);h.position.y=0.28;h.rotation.z=0.12;head.add(h);
-  const limbs={};
-  for(const sx of[-1,1]){const arm=new T.Group();arm.position.set(sx*0.26,1.28,0);g.add(arm);const a=new T.Mesh(new T.CylinderGeometry(0.06,0.05,0.55,6),robe);a.position.y=-0.27;arm.add(a);
-    const leg=new T.Group();leg.position.set(sx*0.1,0.3,0);g.add(leg);limbs[sx<0?'armL':'armR']=arm;limbs[sx<0?'legL':'legR']=leg;}
-  const st=new T.Mesh(new T.CylinderGeometry(0.025,0.03,1.7,6),wd);st.position.set(0,-0.3,0.08);limbs.armR.add(st);
-  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.fillStyle='#ffd24a';x.beginPath();x.arc(32,32,26,0,6.283);x.fill();
-  x.fillStyle='#2a1a06';x.font='bold 40px sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText('!',32,34);
-  const marker=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(c),depthTest:false,transparent:true,toneMapped:false}));marker.scale.set(0.5,0.5,1);marker.position.y=2.35;marker.renderOrder=29;g.add(marker);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
-  return {g,limbs,marker};
-}
+
 VILLAGES.forEach((v,i)=>{const m=buildElder();scene.add(m.g);
   VILLAGERS.push({v,m,elder:true,name:v.elder,x:v.x-Math.cos(v.yaw+Math.PI/5)*3,z:v.z-Math.sin(v.yaw+Math.PI/5)*3,y:0,yaw:0,wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:30,dead:false});});
 /* ── village merchants and the shop ── */
@@ -7767,20 +7799,19 @@ const SELL={horn:6,fletch:5,silk:8,essence:15,tusk:18,core:25,shard:120,pelt:12,
 for(const el of ELS)SELL['r'+el]=110;
 Object.assign(ITEMS,{robes:{name:'Sturdy Robes',color:'#7a4fb0'},focus:{name:'Focus Crystal',color:'#7fd4ff'},boots:{name:'Quickstep Boots',color:'#a0703a'},sigil:{name:'Swift Sigil',color:'#ffe45c'},luck:{name:'Lucky Coin',color:'#5ad46a'},broom:{name:'Flying Broom',color:'#e0a858'}});
 function buildMerchant(){
-  const g=new T.Group(),shirt=stdMat(0x2f6a4a),apron=stdMat(0xd8c9a0),skin=stdMat(0xc08a64),dark=stdMat(0x3a2a1e),hat=stdMat(0x6b4524);
-  const body=new T.Mesh(new T.CylinderGeometry(0.24,0.3,0.8,10),shirt);body.position.y=1.0;g.add(body);
-  const ap=new T.Mesh(new T.BoxGeometry(0.42,0.62,0.04),apron);ap.position.set(0,0.88,0.28);g.add(ap);
-  const head=new T.Group();head.position.y=1.58;g.add(head);head.add(new T.Mesh(new T.SphereGeometry(0.16,10,8),skin));
-  const brim=new T.Mesh(new T.CylinderGeometry(0.32,0.32,0.03,14),hat);brim.position.y=0.12;head.add(brim);
-  const top=new T.Mesh(new T.CylinderGeometry(0.16,0.18,0.18,12),hat);top.position.y=0.22;head.add(top);
-  const limbs={};
-  for(const sx of[-1,1]){const arm=new T.Group();arm.position.set(sx*0.3,1.32,0);g.add(arm);const a=new T.Mesh(new T.CylinderGeometry(0.055,0.05,0.55,6),shirt);a.position.y=-0.27;arm.add(a);
-    const leg=new T.Group();leg.position.set(sx*0.11,0.62,0);g.add(leg);const l=new T.Mesh(new T.CylinderGeometry(0.075,0.065,0.62,6),dark);l.position.y=-0.31;leg.add(l);
-    limbs[sx<0?'armL':'armR']=arm;limbs[sx<0?'legL':'legR']=leg;}
+  const g=new T.Group(),shirt=stdMat(0x2f6a4a),apron=stdMat(0xd8c9a0,{roughness:1}),skin=stdMat(0xc08a64),pants=stdMat(0x3a2a1e),hat=stdMat(0x6b4524),boot=stdMat(0x2a1a10),dark=stdMat(0x1a1210,{roughness:0.3}),hair=stdMat(0x4a2a14),pouch=stdMat(0x8a5a2a);
+  const body=cg(g,[0,1.1,0]);cp(body,CYL(0.22,0.27,0.55,14),shirt,[0,0.02,0]);cp(body,SPH(0.25,16,10),shirt,[0,0.27,0],0,[1.05,0.5,0.9]);cp(body,SPH(0.27,16,12),shirt,[0,-0.15,0.03],0,[1,0.85,1]);
+  cp(body,BOX(0.4,0.62,0.02),apron,[0,-0.18,0.26],[-0.15,0,0]);cp(body,CYL(0.275,0.275,0.06,16),pouch,[0,-0.05,0]);cp(body,SPH(0.07,10,8),pouch,[0.22,-0.12,0.14],0,[1,1.2,0.7]);
+  const head=cg(body,[0,0.55,0]);cp(head,SPH(0.16,18,14),skin,[0,0,0]);cp(head,SPH(0.035,8,6),skin,[0,-0.02,0.16]);cp(head,new T.SphereGeometry(0.13,14,8,0,6.283,Math.PI*0.55,Math.PI*0.45),hair,[0,-0.03,0.04]);
+  for(const sx of[-1,1]){cp(head,SPH(0.018,8,6),dark,[sx*0.058,0.025,0.145]);cp(head,BOX(0.06,0.02,0.02),hair,[sx*0.05,-0.06,0.15],[0,0,sx*0.3]);}
+  cp(head,CYL(0.33,0.32,0.03,20),hat,[0,0.12,0]);cp(head,CYL(0.15,0.17,0.2,14),hat,[0,0.23,0]);cp(head,CYL(0.172,0.172,0.04,14),stdMat(0x8c2f22),[0,0.15,0]);
+  const limbs={};for(const sx of[-1,1]){const arm=cArm(body,shirt,[sx*0.29,0.22,0],0.58,0.06,skin,0);limbs[sx<0?'armL':'armR']=arm;
+    const leg=cLeg(g,pants,[sx*0.11,0.66,0],0.64,0.075,0.04);cp(leg.knee,CYL(0.08,0.09,0.2,10),boot,[0,-0.26,0.01]);limbs[sx<0?'legL':'legR']=leg;}
   const marker=new T.Sprite(new T.SpriteMaterial({map:iconTex('gold'),depthTest:false,transparent:true,toneMapped:false}));marker.scale.set(0.5,0.5,1);marker.position.y=2.35;marker.renderOrder=29;g.add(marker);
-  g.traverse(o=>{if(o.isMesh)o.castShadow=true;});
+  stylizeProp(g);
   return {g,limbs,marker};
 }
+
 VILLAGES.forEach((v,i)=>{const a=v.yaw+Math.PI/5,hx=v.x+Math.cos(a)*6.4,hz=v.z+Math.sin(a)*6.4,m=buildMerchant();scene.add(m.g);
   VILLAGERS.push({v,m,merchant:true,name:['Merchant Ada','Merchant Bram','Merchant Runa','Merchant Kasim','Merchant Tova','Merchant Iko','Merchant Odo','Merchant Pell','Merchant Wren','Merchant Fia','Merchant Celeste'][i],home:[hx,hz],x:hx,z:hz,y:0,yaw:Math.atan2(-Math.cos(a),-Math.sin(a)),wp:null,wT:0,flee:0,fx:0,fz:0,phase:0,vx:0,vz:0,hp:25,dead:false});});
 let shopNPC=null;
