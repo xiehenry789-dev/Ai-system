@@ -2652,7 +2652,7 @@ function audioInit(){
   const src=c.createBufferSource();src.buffer=AU.noise;src.loop=true;const f=c.createBiquadFilter();f.type='lowpass';f.frequency.value=480;
   const g=c.createGain();g.gain.value=0.05;const lfo=c.createOscillator();lfo.frequency.value=0.13;const lg=c.createGain();lg.gain.value=0.025;
   lfo.connect(lg);lg.connect(g.gain);src.connect(f);f.connect(g);g.connect(AU.master);src.start();lfo.start();
-  const bird=()=>{if(AU.on&&AU.ctx.state==='running'&&!document.hidden){const base=fr(2400,4200),n=Math.floor(fr(2,6)),pan=fr(-0.8,0.8),vol=fr(0.012,0.035);
+  const bird=()=>{if(AU.on&&AU.ctx.state==='running'&&!document.hidden&&(typeof WX==='undefined'||WX.day>0.45&&WX.wet<0.3)){const base=fr(2400,4200),n=Math.floor(fr(2,6)),pan=fr(-0.8,0.8),vol=fr(0.012,0.035);
     for(let i=0;i<n;i++)sTone({t:i*fr(0.09,0.14),dur:0.09,wave:'sine',f0:base*fr(0.9,1.1),f1:base*fr(1.15,1.5),g:vol,a:0.02,pan,wet:0.5});}
     setTimeout(bird,fr(2500,9000));};
   setTimeout(bird,1500);
@@ -5573,7 +5573,7 @@ CRE.sentinel={fall:'back',keep:7,strafe:0.8,
 for(const k in CRE){NEWB[k]=CRE[k].build;ANIMX[k]=CRE[k].anim;AIX[k]=cBrain;}
 ELV.sentinel=23;setTimeout(()=>{LOOT_TABLE.sentinel={xp:300,gold:[26,48],drops:[['talon',0.3],['livecrystal',0.4],['tome',0.12]]};},0);
 /* ── monster look: soft shading, surface grain, rim light, ink outlines, contact shadows and bigger eyes ── */
-const MSTYLE={outline:!LOW||true};
+const MSTYLE={outline:GFX!=='fast'};
 function monsterShade(sh){
   sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vMW;varying vec3 vMN;')
     .replace('#include <project_vertex>','#include <project_vertex>\nvMW=(modelMatrix*vec4(transformed,1.0)).xyz;vMN=normalize(mat3(modelMatrix)*objectNormal);');
@@ -5694,7 +5694,7 @@ function blockShade(sh){
 }
 function stylizeProp(g){g.updateMatrixWorld(true);g.traverse(o=>{if(!o.isMesh||o.userData.styled)return;o.userData.styled=1;o.castShadow=true;const mt=o.material;
   if(mt&&mt.isMeshStandardMaterial&&!mt.userData.styled){mt.userData.styled=1;mt.onBeforeCompile=monsterShade;mt.customProgramCacheKey=()=>'monsterShade';}
-  if(mt&&!mt.transparent&&!mt.isMeshBasicMaterial&&o.geometry&&o.geometry.attributes.normal){if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();o.getWorldScale(_sv);
+  if(MSTYLE.outline&&mt&&!mt.transparent&&!mt.isMeshBasicMaterial&&o.geometry&&o.geometry.attributes.normal){if(!o.geometry.boundingSphere)o.geometry.computeBoundingSphere();o.getWorldScale(_sv);
     const r=o.geometry.boundingSphere.radius*Math.max(_sv.x,_sv.y,_sv.z);if(r>0.1){const h=new T.Mesh(o.geometry,OUTLINE_MAT);h.userData.styled=1;h.castShadow=false;o.add(h);}}});}
 /* treant roots: a warning ring, then thorny roots burst up and grab */
 const ROOTS=[],ROOT_GEO=new T.ConeGeometry(0.2,1.9,6),ROOT_MAT=stdMat(0x5a3e26,{roughness:0.9});
@@ -6671,7 +6671,7 @@ function loadCode(txt){txt=(txt||'').trim();if(!txt.startsWith('WM1:'))return 'T
 function restoreBackup(){try{const list=JSON.parse(localStorage.getItem('wizard-meadow-backup')||'[]');if(!list.length)return 'No backup yet. One is made every few minutes while you play.';
   localStorage.setItem(SAVEKEY,list[list.length>1?1:0].d);location.reload();return '';}catch(_){return 'Could not read the backup.';}}
 let backupT=120;
-function updatePolish(dt){if(AU.ctx&&!SB.ready)sbBuild();updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
+function updatePolish(dt){updateLife(dt);if(AU.ctx&&!SB.ready)sbBuild();updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
 applyComfort();
 /* ── day, night and weather ── */
 // the clock runs 0..1: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset. A whole day takes DAYLEN real seconds.
@@ -6774,6 +6774,58 @@ function applySkyLight(dim){
   for(const c of clouds){if(!c.userData.base)c.userData.base=c.material.color.clone();c.material.color.copy(c.userData.base).multiplyScalar((0.3+0.7*d)*(1-0.5*cloud));c.material.opacity=Math.min(1,(c.userData.op0==null?(c.userData.op0=c.material.opacity):c.userData.op0)*(1+cloud));}
 }
 MTN.push(...(window.__mtn||[]));
+/* ── a lived-in world: signposts at the forks, lanterns that light at dusk, fireflies and night sounds ── */
+const LIFE={lanterns:[],lights:[],built:false,chirpT:0,owlT:20,flyT:0};
+for(let i=0;i<3;i++){const l=new T.PointLight(0xffb060,0,16,1.8);scene.add(l);LIFE.lights.push(l);}
+function lifeBuild(){
+  if(LIFE.built)return;LIFE.built=true;
+  const wood=stdMat(0x6b4a2c,{roughness:0.95}),dkwood=stdMat(0x3a2818,{roughness:0.9}),iron=stdMat(0x2a2624,{metalness:0.5,roughness:0.5}),
+    glow=new T.MeshStandardMaterial({color:cC(0xffd28a),emissive:cC(0xffb050),emissiveIntensity:0,roughness:0.6}),
+    halo=new T.SpriteMaterial({map:glowTex,color:cC(0xffc070),blending:T.AdditiveBlending,depthWrite:false,transparent:true,toneMapped:false,opacity:0});
+  LIFE.glow=glow;LIFE.halo=halo;
+  const nearVillage=(x,z,r)=>VILLAGES.some(v=>!v.sky&&Math.hypot(x-v.x,z-v.z)<(r==null?(v.r||26)+4:r));
+  // signposts where roads fork, pointing to the nearest village along each road
+  const key=(x,z)=>Math.round(x)+','+Math.round(z),pts=new Map();
+  for(const p of PATHS)for(const [x,z,ox,oz] of[[p[0],p[1],p[2],p[3]],[p[2],p[3],p[0],p[1]]]){const k=key(x,z);if(!pts.has(k))pts.set(k,{x,z,dirs:[]});pts.get(k).dirs.push([ox-x,oz-z]);}
+  const named=VILLAGES.filter(v=>!v.sky).map(v=>({name:v.name,x:v.x,z:v.z})).concat([{name:'Old Tower',x:TOWER.x,z:TOWER.z},{name:'Crown Hollow',x:CROWN.x,z:CROWN.z}]);
+  const signTex=name=>{const c=document.createElement('canvas');c.width=256;c.height=56;const x=c.getContext('2d');x.fillStyle='#8a6a42';x.fillRect(0,0,256,56);
+    for(let i=0;i<14;i++){x.strokeStyle='rgba(60,40,20,'+(0.12+Math.random()*0.15)+')';x.lineWidth=1;x.beginPath();const y=Math.random()*56;x.moveTo(0,y);x.bezierCurveTo(80,y+Math.random()*6-3,170,y+Math.random()*6-3,256,y);x.stroke();}
+    x.fillStyle='#2a1a0c';x.font='bold 30px Georgia,"Palatino Linotype",serif';x.textAlign='center';x.textBaseline='middle';x.fillText(name,128,30);const t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;return t;};
+  for(const P of pts.values()){if(P.dirs.length<2||nearVillage(P.x,P.z)||Math.hypot(P.x-START.x,P.z-START.z)<14)continue;
+    const g=new T.Group(),y=groundH(P.x,P.z);g.position.set(P.x+1.4,y,P.z+1.4);
+    cp(g,CYL(0.07,0.09,2.6,8),dkwood,[0,1.3,0]);cp(g,CON(0.1,0.18,8),dkwood,[0,2.68,0]);let h=2.25;const used=new Set();
+    for(const [dx,dz] of P.dirs){const l=Math.hypot(dx,dz)||1,ux=dx/l,uz=dz/l;let best=null,bs=-1e9;
+      for(const n of named){const vx=n.x-P.x,vz=n.z-P.z,d=Math.hypot(vx,vz)+1e-4,c=(vx*ux+vz*uz)/d;if(c<0.55)continue;const sc=c*2-d/600;if(sc>bs){bs=sc;best=n;}}
+      if(!best||used.has(best.name))continue;used.add(best.name);
+      const arm=cg(g,[0,h,0]);arm.rotation.y=Math.atan2(-uz,ux);const pl=new T.Mesh(new T.BoxGeometry(1.25,0.26,0.05),[wood,wood,wood,wood,new T.MeshStandardMaterial({map:signTex(best.name),roughness:0.9}),new T.MeshStandardMaterial({map:signTex(best.name),roughness:0.9})]);
+      pl.position.set(0.68,0,0);arm.add(pl);const tip=new T.Mesh(new T.CylinderGeometry(0,0.18,0.18,3),wood);tip.rotation.set(0,0,-Math.PI/2);tip.position.set(1.36,0,0);tip.scale.set(1,1,0.28);arm.add(tip);h-=0.34;}
+    if(used.size){stylizeProp(g);scene.add(g);}}
+  // lanterns: at the edge of every village where a road comes in, and around the square
+  const lantern=(x,z,face)=>{const y=groundH(x,z),g=new T.Group();g.position.set(x,y,z);g.rotation.y=face||0;cp(g,CYL(0.06,0.08,2.5,8),dkwood,[0,1.25,0]);cp(g,BOX(0.5,0.06,0.06),dkwood,[0.22,2.42,0]);
+    const L=cg(g,[0.42,2.2,0]);cp(L,BOX(0.22,0.04,0.22),iron,[0,0.16,0]);cp(L,CON(0.15,0.12,4),iron,[0,0.24,0],[0,Math.PI/4,0]);cp(L,BOX(0.16,0.24,0.16),glow,[0,0,0]);cp(L,BOX(0.2,0.03,0.2),iron,[0,-0.14,0]);
+    for(const [a,b] of[[-1,-1],[1,-1],[-1,1],[1,1]])cp(L,BOX(0.02,0.3,0.02),iron,[a*0.09,0.02,b*0.09]);
+    const s=new T.Sprite(halo);s.scale.set(1.6,1.6,1);L.add(s);stylizeProp(g);scene.add(g);g.updateMatrixWorld(true);const wp=new T.Vector3();L.getWorldPosition(wp);LIFE.lanterns.push(wp);};
+  for(const v of VILLAGES){if(v.sky)continue;const R=v.r||26;
+    for(let i=0;i<4;i++){const a=v.yaw+i*Math.PI/2+Math.PI/4;lantern(v.x+Math.cos(a)*9,v.z+Math.sin(a)*9,-a);}
+    for(const p of PATHS)for(const [x,z,ox,oz] of[[p[0],p[1],p[2],p[3]],[p[2],p[3],p[0],p[1]]]){const d=Math.hypot(x-v.x,z-v.z);if(d>R+6||d<R-12)continue;const ux=ox-x,uz=oz-z,l=Math.hypot(ux,uz)||1;
+      const px=-uz/l*2.6,pz=ux/l*2.6;lantern(x+ux/l*3+px,z+uz/l*3+pz,Math.atan2(uz,ux));}}
+}
+function updateLife(dt){
+  if(!LIFE.built){if(typeof WX!=='undefined'&&groundTex)lifeBuild();return;}
+  const night=1-WX.day,on=smooth(0.25,0.6,night);
+  LIFE.glow.emissiveIntensity=on*2.2;LIFE.halo.opacity=on*0.85;
+  // the three lanterns nearest you cast real light
+  if(on>0.02){const ps=LIFE.lanterns.map(p=>[p,(p.x-player.x)**2+(p.z-player.z)**2]).sort((a,b)=>a[1]-b[1]);
+    LIFE.lights.forEach((l,i)=>{const q=ps[i];if(q&&q[1]<60*60){l.position.copy(q[0]);l.intensity=on*(1.4+Math.sin(time*7+i*2)*0.08);}else l.intensity=0;});}
+  else LIFE.lights.forEach(l=>l.intensity=0);
+  // fireflies on clear nights, away from deserts and snow
+  if(on>0.3&&WX.wet<0.2&&!SKYCTX&&!BROOM.on){biomeW(player.x,player.z,_bw);const ok=_bw[0]+_bw[1]+_bw[2]+_bw[9]+_bw[4]<0.4;LIFE.flyT-=dt;
+    if(ok&&LIFE.flyT<=0){LIFE.flyT=0.08;rsphere(_r,12);const x=player.x+_r.x,z=player.z+_r.z,y=groundH(x,z)+fr(0.4,2.2);PA.spawn(x,y,z,fr(-0.3,0.3),fr(-0.1,0.2),fr(-0.3,0.3),fr(2.5,4.5),fr(0.07,0.12),0.03,0.85,1,0.4,1,0.6,0.9,0.2,0,0,6);}}
+  // crickets and owls at night
+  const c=AU.ctx;if(!c||!AU.on||homeOpen||c.state!=='running')return;
+  if(on>0.5&&WX.wet<0.3&&!SKYCTX){LIFE.chirpT-=dt;if(LIFE.chirpT<=0){LIFE.chirpT=fr(0.12,0.7);const f=fr(4200,5000),pan=fr(-0.9,0.9),g=fr(0.006,0.016);for(let k=0;k<3;k++)sTone({t:k*0.045,dur:0.03,f0:f,g,pan,wave:'sine',a:0.004});}
+    LIFE.owlT-=dt;if(LIFE.owlT<=0){LIFE.owlT=fr(18,40);const pan=fr(-0.8,0.8);sTone({dur:0.35,f0:390,f1:370,g:0.035,pan,a:0.06,wet:0.6});sTone({t:0.5,dur:0.6,f0:380,f1:340,g:0.03,pan,a:0.08,wet:0.6});}}
+}
 function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   if(e.state==='dead'||e.under)return;e.hitT=time;if(e.base==='beetle'&&(e.state==='charge'||e.state==='roar'))dmg*=0.3;
   if(e.T.boss){if(o)o=Object.assign({},o,{freeze:o.freeze?1.5:0,root:o.root?1.5:0,stun:0});kx=(kx||0)*0.3;kz=(kz||0)*0.3;ky=0;
@@ -7075,7 +7127,7 @@ $('pmenu').addEventListener('click',ev=>{ev.stopPropagation();saveGame();openHom
 function syncSettingsUI(){for(const b of document.querySelectorAll('#gfxrow [data-gfx]'))b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
   for(const b of document.querySelectorAll('#sndrow [data-snd]'))b.setAttribute('aria-pressed',String((b.dataset.snd==='1')===AU.on));
   $('setvol').value=Math.round(SET.vol*100);$('volout').textContent=Math.round(SET.vol*100)+'%';$('setsens').value=Math.round(SET.sens*100);$('sensout').textContent=SET.sens.toFixed(1)+'×';$('setinv').checked=!!SET.invY;syncComfortUI();for(const b of document.querySelectorAll('#diffrow [data-diff]'))b.setAttribute('aria-pressed',String(b.dataset.diff===(SET.diff||'normal')));$('diffnote').textContent=DIFF().d+' Takes effect for monsters you meet from now on.';for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.setAttribute('aria-pressed',String((b.dataset.fy==='1')===(SET.fairy!==false)));
-  $('gfxnote').textContent={fast:'Smoothest. Less grass, softer shadows.',auto:'Adjusts itself to keep the game smooth.',pretty:'Sharpest picture. Needs a strong computer.'}[GFX]+' Changing this restarts the game; your progress is kept.';}
+  $('gfxnote').textContent={fast:'Smoothest. Less grass, softer shadows, no ink outlines.',auto:'Adjusts itself to keep the game smooth.',pretty:'Sharpest picture. Needs a strong computer.'}[GFX]+' Changing this restarts the game; your progress is kept.';}
 for(const b of document.querySelectorAll('#sndrow [data-snd]'))b.addEventListener('click',()=>{AU.on=b.dataset.snd==='1';SET.sound=AU.on;saveSet();applyVolume();syncSettingsUI();});
 $('setvol').addEventListener('input',e=>{SET.vol=+e.target.value/100;saveSet();applyVolume();$('volout').textContent=e.target.value+'%';});
 $('setsens').addEventListener('input',e=>{SET.sens=+e.target.value/100;saveSet();$('sensout').textContent=SET.sens.toFixed(1)+'×';});
