@@ -163,14 +163,15 @@ kbd{display:inline-block;padding:1px 5px;border-radius:4px;border:1px solid var(
   border:1px solid var(--line);color:var(--text);font:700 13px/1 var(--ui);pointer-events:auto}
 #lvlup{position:fixed;left:50%;top:32%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;gap:6px;width:min(560px,calc(100% - 32px))}
 #lvlup[hidden]{display:none!important}
-#combo{position:fixed;left:50%;top:22%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;gap:4px;z-index:6}
+#combo{position:fixed;left:50%;top:31%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;gap:4px;z-index:30}
 #combo[hidden]{display:none!important}
 #story{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at center,rgba(20,10,40,.55),rgba(0,0,0,.82));z-index:20}
-#story[hidden]{display:none!important}.st-card{max-width:560px}.st-kick{margin:0 0 6px;font:700 11px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:#b48cff}
+#story[hidden],body.home #story{display:none!important}.st-card{max-width:560px}.st-kick{margin:0 0 6px;font:700 11px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:#b48cff}
 #story h2{margin:0 0 14px;font:700 24px/1.2 var(--display);color:var(--gold)}.st-body p{margin:0 0 12px;font:500 15px/1.6 var(--ui);color:#e4e8ef}.st-body p:last-child{margin-bottom:18px}
 .tq.tmain{border-color:rgba(255,217,138,.6);background:rgba(40,30,10,.66)}.tq.tmain span{color:#ffd98a}
 body.bigtext #hud,body.bigtext #feed,body.bigtext #tracker,body.bigtext #fairy,body.bigtext #spellname,body.bigtext #lvlup,body.bigtext #combo,body.bigtext #ach,body.bigtext .hm-side,body.bigtext .card,body.bigtext #riftbar,body.bigtext #bossbar{zoom:var(--uiscale)}
 body.noflash #flash{display:none!important}
+body.touch #bindlist,body.touch #bindreset{display:none}
 body.contrast .tq,body.contrast #feed .fi,body.contrast #fairy,body.contrast .card,body.contrast .hm-pane{background:rgba(0,0,0,.92)!important;border-color:#fff!important;color:#fff}
 #hmsettings{max-height:min(82vh,820px);overflow:auto}.hm-sub{margin:6px 0 0;font:700 12px/1 var(--ui);letter-spacing:.16em;text-transform:uppercase;color:#ffd98a}
 #bindlist{display:grid;grid-template-columns:1fr 1fr;gap:6px 14px}.bind-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font:500 13px/1.2 var(--ui);color:var(--text)}
@@ -3609,7 +3610,7 @@ function tutEv(k){TS.ev[k]=(TS.ev[k]||0)+1;}
 function tutActive(){return SKILL.tut<TUT.length&&!homeOpen&&!player.dead;}
 function tutAdvance(){SKILL.tut++;TS.t=0;TS.ev={};TS.look=0;TS.walk=0;if(SKILL.tut>=TUT.length)SKILL.tut=99;queueSave();}
 function tutSkip(){SKILL.tut=99;queueSave();$('fairy').hidden=true;feed('Pip will keep quiet now','#ffd98a');}
-function tutShow(){const el=$('fairy');if(!tutActive()||paused()||panelOpen||dialogOpen||mapOpen){el.hidden=true;TS.shown=-1;return;}
+function tutShow(){const el=$('fairy');if(!tutActive()||paused()||panelOpen||dialogOpen||mapOpen||STC.open){el.hidden=true;TS.shown=-1;return;}
   el.hidden=false;el.classList.toggle('fy-top',bookOpen||panelOpen||dialogOpen);if(TS.shown===SKILL.tut)return;TS.shown=SKILL.tut;const st=TUT[SKILL.tut];
   $('fytext').textContent=st.say();$('fystep').textContent=(SKILL.tut+1)+' / '+TUT.length;
   const keys=!touchMode&&!lockFailed;$('fykeys').hidden=!keys;$('fybtns').hidden=keys;$('fynext').hidden=!st.auto;
@@ -5166,8 +5167,8 @@ function igniteCell(i,j){
   const k=wfKey(i,j);if(WF.cells.has(k)||WF.cells.size>=WF.MAXC)return false;const b=WF.burnt.get(k);if(b&&time-b.t<90)return false;
   const x=(i+0.5)*WF.CS,z=(j+0.5)*WF.CS;if(!burnable(x,z))return false;
   const life=fr(4.5,7);WF.cells.set(k,{i,j,x,z,t:time,until:time+life});WF.burnt.set(k,{t:time,x,z});
-  emitters.push({x,y:groundH(x,z)+0.5,z,r:1.4,until:time+life,rate:LOW?8:15,acc:0,type:0,sy:0.35,wf:k});
-  paintBlob(x,z,2.1,SCORCH,0.55,3);
+  emitters.push({x,y:groundH(x,z)+1.0,z,r:1.6,until:time+life,rate:LOW?18:32,acc:0,type:0,sy:0.45,wf:k});
+  paintBlob(x,z,2.4,SCORCH,0.85,4);if(Math.random()<0.3)lightFlash(x,groundH(x,z)+2,z,0xff7a2a,1.6,life,14);
   // trees caught in it go up too
   for(let t=0;t<TR.n;t++){const dx=TR.x[t]-x,dz=TR.z[t]-z;if(dx*dx+dz*dz<4.2)burnTree(t);}
   return true;
@@ -7489,7 +7490,7 @@ function frame(now){
   requestAnimationFrame(frame);
   {const rdt=Math.min(0.1,Math.max(0,(now-(window.__pl||now))/1000));window.__pl=now;updatePolish(rdt);}
   if(mapOpen){if(mapDirty){rebuildMap();mapDirty=false;}drawMap();last=now;return;}
-  const raw=(now-last)/1000;last=now;let dt=(homeOpen||paused()||panelOpen||dialogOpen||bookOpen)?0:Math.min(0.05,Math.max(0.001,raw));if(hitStop>0&&dt>0){hitStop-=dt;dt*=0.12;}time+=dt;frameN++;
+  const raw=(now-last)/1000;last=now;let dt=(homeOpen||paused()||panelOpen||dialogOpen||bookOpen||STC.open)?0:Math.min(0.05,Math.max(0.001,raw));if(hitStop>0&&dt>0){hitStop-=dt;dt*=0.12;}time+=dt;frameN++;
   cooldown=Math.max(0,cooldown-dt);for(let i=0;i<100;i++)if(CD[i]>0)CD[i]=Math.max(0,CD[i]-dt);if(frameN%3===0)updateCdHud();
   updateSkyCtx();updatePlayer(dt);
   acc+=dt;let steps=0;while(acc>=1/60&&steps<3){physStep(1/60);acc-=1/60;steps++;}if(acc>0.1)acc=0;
