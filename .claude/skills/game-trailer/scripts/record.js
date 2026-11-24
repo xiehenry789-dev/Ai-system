@@ -20,7 +20,7 @@ let three=null;try{three=fs.readFileSync(require.resolve('three/build/three.min.
   const b=await chromium.launch({args:['--use-angle=swiftshader','--enable-unsafe-swiftshader','--ignore-gpu-blocklist']});
   const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:1});const pg=await ctx.newPage();
   pg.on('pageerror',e=>console.log('[pageerror]',e.message));
-  await pg.addInitScript(()=>{try{localStorage.setItem('wizard-meadow-gfx',process.env.TRAILER_GFX||'fast');localStorage.setItem('wizard-meadow-settings',JSON.stringify({fairy:false,sound:false,vol:0}));localStorage.removeItem('wizard-meadow-save-1');}catch(e){}
+  await pg.addInitScript(()=>{try{localStorage.setItem('wizard-meadow-gfx',process.env.TRAILER_GFX||'fast');localStorage.setItem('wizard-meadow-settings',JSON.stringify({fairy:false,sound:false,vol:0,cycle:false,weather:false}));localStorage.removeItem('wizard-meadow-save-1');}catch(e){}
     const rp=performance.now.bind(performance);window.__vt={on:false,t:0,go:false,res:null};performance.now=()=>window.__vt.on?window.__vt.t:rp();
     window.__vtStart=()=>{window.__vt.t=rp();window.__vt.on=true;};});
   await pg.route('**/*',r=>{const u=r.request().url();if(u.includes('three.min.js'))return three?r.fulfill({body:three,contentType:'application/javascript'}):r.continue();

@@ -165,6 +165,9 @@ kbd{display:inline-block;padding:1px 5px;border-radius:4px;border:1px solid var(
 #lvlup[hidden]{display:none!important}
 #combo{position:fixed;left:50%;top:31%;transform:translate(-50%,-50%);text-align:center;pointer-events:none;display:flex;flex-direction:column;gap:4px;z-index:30}
 #combo[hidden]{display:none!important}
+#clock{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);right:calc(max(16px,env(safe-area-inset-right,0px)) + 160px);display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(12,18,26,.62);border:1px solid var(--line);pointer-events:auto;z-index:3}
+#clock i{font-style:normal;font-size:15px}#clock b{font:700 13px/1 var(--ui);color:#fff4d8;font-variant-numeric:tabular-nums}#clock span{font:500 12px/1 var(--ui);color:#b8c4d4}
+body.home #clock{display:none}@media (max-width:700px){#clock{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);right:auto;left:16px}#clock span{display:none}}
 #cfx{position:fixed;inset:0;pointer-events:none;z-index:4;opacity:0}#cfx[hidden]{display:none!important}
 #story{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:24px max(16px,env(safe-area-inset-left,0px));background:radial-gradient(ellipse at center,rgba(20,10,40,.55),rgba(0,0,0,.82));z-index:20}
 #story[hidden],body.home #story{display:none!important}.st-card{max-width:560px}.st-kick{margin:0 0 6px;font:700 11px/1 var(--ui);letter-spacing:.22em;text-transform:uppercase;color:#b48cff}
@@ -587,6 +590,8 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
       <label class="hm-field"><span class="hm-lab">Mouse sensitivity <output id="sensout"></output></span><input type="range" id="setsens" min="30" max="250" step="10"></label>
       <label class="hm-check"><input type="checkbox" id="setinv"> Invert mouse up and down</label>
       <label class="hm-field"><span class="hm-lab">Music <output id="musout"></output></span><input type="range" id="setmus" min="0" max="100" step="5"></label>
+      <div class="hm-field"><span class="hm-lab">Day and night</span><div class="hm-seg" id="cyclerow" role="group" aria-label="Day and night"><button type="button" data-cy="1">Cycle</button><button type="button" data-cy="0">Always day</button></div></div>
+      <div class="hm-field"><span class="hm-lab">Weather</span><div class="hm-seg" id="wxrow" role="group" aria-label="Weather"><button type="button" data-wx="1">On</button><button type="button" data-wx="0">Always clear</button></div></div>
       <p class="hm-sub">Comfort</p>
       <label class="hm-field"><span class="hm-lab">Screen shake <output id="shakeout"></output></span><input type="range" id="setshake" min="0" max="100" step="10"></label>
       <div class="hm-field"><span class="hm-lab">Text size</span><div class="hm-seg" id="textrow" role="group" aria-label="Text size"><button type="button" data-tx="normal">Normal</button><button type="button" data-tx="large">Large</button><button type="button" data-tx="xl">Extra large</button></div></div>
@@ -625,6 +630,7 @@ body.home #jump,body.home #strike,body.home #joy,body.home #bossbar,body.home #l
 <div id="lvlup" hidden><b></b><span></span></div>
 <div id="combo" hidden><b></b><span></span></div>
 <div id="cfx" hidden></div>
+<div id="clock" role="status"><i aria-hidden="true">☀</i><b>08:00</b><span></span></div>
 <div id="ach" hidden role="status"><i aria-hidden="true">★</i><div><small>Achievement unlocked</small><b></b><span></span></div></div>
 <div id="riftbar" hidden><b id="riftwave"></b><span id="riftleft"></span><small id="riftbest"></small></div>
 <div id="dialog" hidden>
@@ -1262,16 +1268,20 @@ const lavaU={uT:{value:0}};
     pendingFx.push({x:p.x,y:groundH(p.x,p.z)+0.4,z:p.z,r:p.r*0.8,until:Infinity,rate:5,acc:0,type:1,sy:0.1,persist:true});}
 })();
 const sky=new T.Mesh(new T.SphereGeometry(3100,32,18),new T.ShaderMaterial({
-  side:T.BackSide,depthWrite:false,fog:false,uniforms:{uSun:{value:SUN},uHor:{value:FOGC},uBoost:{value:0}},
+  side:T.BackSide,depthWrite:false,fog:false,uniforms:{uSun:{value:SUN},uHor:{value:FOGC},uBoost:{value:0},uDay:{value:1},uCloud:{value:0},uMoon:{value:new T.Vector3(0,-1,0)},uDusk:{value:0}},
   vertexShader:'varying vec3 vD;void main(){vD=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
-  fragmentShader:`varying vec3 vD;uniform vec3 uSun;uniform vec3 uHor;uniform float uBoost;
+  fragmentShader:`varying vec3 vD;uniform vec3 uSun;uniform vec3 uHor;uniform vec3 uMoon;uniform float uBoost;uniform float uDay;uniform float uCloud;uniform float uDusk;
+  float hash3(vec3 p){return fract(sin(dot(p,vec3(12.9898,78.233,45.164)))*43758.5453);}
   void main(){vec3 d=normalize(vD);float h=max(d.y,0.0);
-    vec3 c=mix(uHor,vec3(0.22,0.47,0.86),pow(h,0.5));
-    c=mix(c,vec3(0.14,0.33,0.74),smoothstep(0.35,1.0,h)*0.6);
-    float s=max(dot(d,uSun),0.0);
-    c+=vec3(1.0,0.86,0.62)*(pow(s,6.0)*0.22+pow(s,48.0)*0.35)+vec3(1.0,0.97,0.9)*smoothstep(0.9993,0.9997,s)*1.2;
-    c+=uBoost*vec3(0.5,0.55,0.7);
-    gl_FragColor=vec4(c,1.0);}`
+    vec3 top=mix(vec3(0.015,0.03,0.09),vec3(0.14,0.33,0.74),uDay),mid=mix(vec3(0.03,0.06,0.15),vec3(0.22,0.47,0.86),uDay);
+    vec3 c=mix(uHor,mid,pow(h,0.5));c=mix(c,top,smoothstep(0.35,1.0,h)*0.6);c=mix(c,uHor*0.92+vec3(0.02),min(1.0,uCloud*0.95));
+    float s=max(dot(d,uSun),0.0),sv=smoothstep(-0.15,0.05,uSun.y)*(1.0-uCloud*0.85);
+    c+=vec3(1.0,0.5,0.28)*pow(s,3.0)*uDusk*0.55;
+    c+=sv*(vec3(1.0,0.86,0.62)*(pow(s,6.0)*0.22+pow(s,48.0)*0.35)+vec3(1.0,0.97,0.9)*smoothstep(0.9993,0.9997,s)*1.2);
+    float m=max(dot(d,uMoon),0.0),mv=smoothstep(-0.1,0.1,uMoon.y)*(1.0-uDay)*(1.0-uCloud*0.9);
+    c+=mv*(vec3(0.88,0.92,1.0)*smoothstep(0.9988,0.9993,m)*1.1+vec3(0.25,0.32,0.55)*pow(m,24.0)*0.3);
+    vec3 q=floor(d*380.0);float st=step(0.9972,hash3(q))*(1.0-uDay)*(1.0-uCloud)*smoothstep(0.02,0.3,h);c+=vec3(st)*(0.55+0.45*sin(hash3(q+1.0)*60.0+uBoost));
+    c+=uBoost*vec3(0.5,0.55,0.7);gl_FragColor=vec4(c,1.0);}`
 }));
 sky.frustumCulled=false;scene.add(sky);
 (function(){ // hazy mountain rings
@@ -1282,7 +1292,7 @@ sky.frustumCulled=false;scene.add(sky);
       pos.push(Math.cos(a)*R,-20,Math.sin(a)*R, Math.cos(a)*R,h,Math.sin(a)*R);
       if(i<N){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2);}}
     const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(pos,3));g.setIndex(idx);
-    const m=new T.Mesh(g,new T.MeshBasicMaterial({color,fog:false,side:T.DoubleSide}));m.frustumCulled=false;scene.add(m);
+    const m=new T.Mesh(g,new T.MeshBasicMaterial({color,fog:false,side:T.DoubleSide}));m.frustumCulled=false;scene.add(m);m.userData.base=color.clone();(window.__mtn=window.__mtn||[]).push(m);
   };
   ring(3200,180,560,3.3,new T.Color(0.68,0.77,0.88));
   ring(2700,120,400,9.7,new T.Color(0.58,0.7,0.82));
@@ -5878,6 +5888,7 @@ function burnable(x,z){
 }
 const wfKey=(i,j)=>i*100003+j;
 function igniteCell(i,j){
+  if(WX.wet>0.55&&!SKYCTX)return false;
   const k=wfKey(i,j);if(WF.cells.has(k)||WF.cells.size>=WF.MAXC)return false;const b=WF.burnt.get(k);if(b&&time-b.t<90)return false;
   const x=(i+0.5)*WF.CS,z=(j+0.5)*WF.CS;if(!burnable(x,z))return false;
   const life=fr(4.5,7);WF.cells.set(k,{i,j,x,z,t:time,until:time+life});WF.burnt.set(k,{t:time,x,z});
@@ -6387,6 +6398,108 @@ function restoreBackup(){try{const list=JSON.parse(localStorage.getItem('wizard-
 let backupT=120;
 function updatePolish(dt){updateGamepad(dt);updateMusic(dt);if(typeof updateStory==='function')updateStory(dt);backupT-=dt;if(backupT<=0){backupT=180;backupSave();}}
 applyComfort();
+/* ── day, night and weather ── */
+// the clock runs 0..1: 0 midnight, 0.25 sunrise, 0.5 noon, 0.75 sunset. A whole day takes DAYLEN real seconds.
+const DAYLEN=720;
+const WX={t:0.32,day:1,dayN:1,kind:'clear',next:'clear',k:0,want:0,changeAt:150,wet:0,storm:0,fogMul:1,aggroMul:1,local:'clear',flashT:6,dayNo:1,strike:null,lastLocal:'',lastPhase:'',rainG:null};
+const LDIR=new T.Vector3().copy(SUN),MOON=new T.Vector3(),_wc=new T.Color(),_wc2=new T.Color();
+const DAYFOG=new T.Color(),NIGHTFOG=new T.Color(0.07,0.09,0.17),DUSKFOG=new T.Color(0.86,0.52,0.36),STORMFOG=new T.Color(0.42,0.45,0.5),SANDFOG=new T.Color(0.86,0.7,0.46),ASHFOG=new T.Color(0.32,0.27,0.26);
+const cycleOn=()=>SET.cycle!==false,weatherOn=()=>SET.weather!==false;
+// a light the wizard's staff gives off at night
+const nightLight=new T.PointLight(0xffc88a,0,18,1.6);scene.add(nightLight);
+// the mountains on the horizon darken with the sky
+const MTN=[];
+/* falling rain, snow, sand, ash or spores: one batch of points that follows the camera */
+const PRECIP=(function(){const N=LOW?2600:6000,seed=new Float32Array(N*3);for(let i=0;i<N*3;i++)seed[i]=Math.random();
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(new Float32Array(N*3),3));g.setAttribute('aSeed',new T.BufferAttribute(seed,3));
+  const u={uTime:{value:0},uCam:{value:new T.Vector3()},uBox:{value:new T.Vector3(70,40,70)},uVel:{value:new T.Vector3(0,-22,0)},uSize:{value:14},uColor:{value:new T.Color(0.75,0.8,0.9)},uOp:{value:0},uStreak:{value:1},uSway:{value:0},uCount:{value:1}};
+  const m=new T.ShaderMaterial({uniforms:u,transparent:true,depthWrite:false,fog:false,
+    vertexShader:`attribute vec3 aSeed;uniform float uTime,uSize,uSway,uCount,uStreak;uniform vec3 uCam,uBox,uVel;varying float vF;varying float vOn;
+      void main(){float sp=0.75+0.5*fract(aSeed.x*17.31);vec3 p=aSeed*uBox+uVel*uTime*sp;p.x+=sin(uTime*1.7+aSeed.z*40.0)*uSway;p.z+=cos(uTime*1.3+aSeed.x*40.0)*uSway;
+        vec3 wp=uCam+mod(p-uCam+uBox*0.5,uBox)-uBox*0.5;vec4 mv=viewMatrix*vec4(wp,1.0);gl_Position=projectionMatrix*mv;
+        vOn=step(fract(aSeed.y*91.7),uCount);float d=length(wp-uCam);vF=1.0-smoothstep(uBox.x*0.3,uBox.x*0.5,d);gl_PointSize=vOn*clamp(uSize*60.0/max(0.5,-mv.z),1.0,uStreak>0.5?40.0:9.0);}`,
+    fragmentShader:`uniform vec3 uColor;uniform float uOp,uStreak;varying float vF;varying float vOn;
+      void main(){vec2 q=gl_PointCoord-0.5;float a=uStreak>0.5?(1.0-smoothstep(0.012,0.03,abs(q.x)))*(1.0-abs(q.y)*2.0):1.0-smoothstep(0.15,0.5,length(q));
+        if(a<0.02||vOn<0.5)discard;gl_FragColor=vec4(uColor,a*uOp*vF);}`});
+  const p=new T.Points(g,m);p.frustumCulled=false;p.renderOrder=20;scene.add(p);return {p,u};})();
+// what the weather looks like here, given the global weather and the land you are in
+function localWeather(kind){if(kind==='clear'||kind==='cloudy')return kind;if(SKYCTX)return 'clear';
+  biomeW(player.x,player.z,_bw);const snow=_bw[0]+_bw[8]*0.8,sand=_bw[2]+_bw[5],ash=_bw[1]+_bw[9],spore=_bw[11];
+  if(kind==='fog')return 'fog';
+  if(snow>0.45)return kind==='storm'?'blizzard':'snow';if(sand>0.45)return 'sandstorm';if(ash>0.45)return 'ashfall';if(spore>0.45)return 'spores';return kind;}
+const WXNAME={clear:'Clear',cloudy:'Cloudy',rain:'Rain',storm:'Thunderstorm',fog:'Fog',snow:'Snow',blizzard:'Blizzard',sandstorm:'Sandstorm',ashfall:'Ash fall',spores:'Spore drift'};
+const WXICON={clear:'☀',cloudy:'☁',rain:'🌧',storm:'⛈',fog:'🌫',snow:'❄',blizzard:'❄',sandstorm:'🌪',ashfall:'🌋',spores:'✦'};
+const WXTIP={rain:'Rain: lightning spells +25%, fire spells −20%, and grass fires go out.',storm:'Thunderstorm: lightning spells +35%, fire −25%. Lightning strikes the land!',snow:'Snow: frost spells +20%.',blizzard:'Blizzard: frost spells +30%, and it is hard to see.',
+  sandstorm:'Sandstorm: earth spells +20%, and it is hard to see.',ashfall:'Ash fall: fire spells +15%.',fog:'Fog: you cannot see far, and nor can the monsters.',spores:'Spore drift: poison spells +20%.',night:'Night: monsters notice you from further away, and shadow spells are +20%.'};
+function wxMul(el){const L=WX.local,k=WX.k;let m=1;
+  if(L==='rain'){if(el==='storm')m*=1+0.25*k;if(el==='fire')m*=1-0.2*k;}
+  else if(L==='storm'){if(el==='storm')m*=1+0.35*k;if(el==='fire')m*=1-0.25*k;}
+  else if(L==='snow'&&el==='frost')m*=1+0.2*k;else if(L==='blizzard'&&el==='frost')m*=1+0.3*k;
+  else if(L==='sandstorm'&&el==='earth')m*=1+0.2*k;else if(L==='ashfall'&&el==='fire')m*=1+0.15*k;else if(L==='spores'&&el==='poison')m*=1+0.2*k;
+  if(el==='shadow')m*=1+0.2*(1-WX.day);if(el==='light')m*=1+0.1*WX.day;return m;}
+function pickWeather(){const r=Math.random();return r<0.38?'clear':r<0.58?'cloudy':r<0.8?'rain':r<0.92?'storm':'fog';}
+function phaseName(t){return t<0.2||t>=0.82?'Night':t<0.3?'Dawn':t<0.45?'Morning':t<0.58?'Midday':t<0.72?'Afternoon':'Dusk';}
+const clockEl=document.getElementById('clock');let clockT=0;
+function updateWeather(dt){
+  // the clock
+  if(cycleOn()){const old=WX.t;WX.t=(WX.t+dt/DAYLEN)%1;if(WX.t<old)WX.dayNo++;}else WX.t=0.42;
+  const a=(WX.t-0.25)*Math.PI*2,el=Math.sin(a);SUN.set(-Math.cos(a)*0.8,el*0.95,-0.42).normalize();MOON.set(Math.cos(a)*0.7,-el*0.95,-0.35).normalize();
+  const dayK=smooth(-0.14,0.22,SUN.y);WX.day=dayK;
+  // the weather changes every few minutes
+  if(weatherOn()&&!SKYCTX||WX.kind!=='clear'){WX.changeAt-=dt;}
+  if(!weatherOn()){WX.next='clear';}
+  else if(WX.changeAt<=0){WX.changeAt=fr(160,320);WX.next=pickWeather();if(WX.next===WX.kind)WX.next=WX.kind==='clear'?'cloudy':'clear';}
+  if(WX.next!==WX.kind){WX.k-=dt/12;if(WX.k<=0){WX.k=0;WX.kind=WX.next;}}else WX.k=Math.min(1,WX.k+dt/15);
+  const L=localWeather(WX.kind);if(L!==WX.local){WX.local=L;}
+  const k=WX.kind==='clear'?0:WX.k,wetK=(L==='rain'||L==='storm')?k:0,stormK=(L==='storm'||L==='blizzard')?k:0;WX.wet=wetK;WX.storm=stormK;
+  const vis=(L==='fog'?2.4:L==='sandstorm'||L==='blizzard'?1.8:L==='ashfall'||L==='spores'?1.5:L==='rain'||L==='snow'?1.35:L==='storm'?1.6:L==='cloudy'?1.1:1);
+  WX.fogMul=1+(vis-1)*k;WX.aggroMul=(1+0.25*(1-dayK))*(L==='fog'?1-0.35*k:1);
+  // precipitation
+  const P=PRECIP.u;P.uTime.value=time;P.uCam.value.copy(camera.position);
+  const show={rain:[0,-24,0,13,[0.72,0.78,0.9],0.45,1,0,1],storm:[3,-30,1,15,[0.7,0.76,0.88],0.55,1,0,1],snow:[0.6,-2.2,0.3,7,[1,1,1],0.9,0,1.4,0.7],blizzard:[7,-4,2,8,[1,1,1],0.95,0,2,1],
+    sandstorm:[16,-1,5,7,[0.9,0.72,0.45],0.6,0,1.5,1],ashfall:[0.4,-1.2,0.2,6,[0.35,0.3,0.3],0.85,0,0.8,0.6],spores:[0.2,0.5,0.1,6,[0.75,1,0.55],0.9,0,1.2,0.35]}[L];
+  if(show&&k>0.01){P.uVel.value.set(show[0],show[1],show[2]);P.uSize.value=show[3];P.uColor.value.setRGB(show[4][0],show[4][1],show[4][2]);P.uOp.value=show[5]*k*(L==='spores'?1:0.6+0.4*Math.max(dayK,0.4));P.uStreak.value=show[6];P.uSway.value=show[7];P.uCount.value=show[8];PRECIP.p.visible=true;}
+  else{P.uOp.value=0;PRECIP.p.visible=false;}
+  if(L==='spores'&&k>0.1)P.uColor.value.setRGB(0.75,1,0.55).multiplyScalar(1.3);
+  // rain puts fires out
+  if(wetK>0.55&&WF.cells.size)for(const c of WF.cells.values())c.until=Math.min(c.until,time+1.2);
+  // thunder and lightning
+  if(stormK>0.5&&L==='storm'){WX.flashT-=dt;if(WX.flashT<=0){WX.flashT=fr(4,11);const near=Math.random()<0.22,a2=Math.random()*6.283,d=near?fr(8,22):fr(40,150),x=player.x+Math.cos(a2)*d,z=player.z+Math.sin(a2)*d;
+    if(near){WX.strike={x,z,t:0};tCircle(x,z,3,0xfff2b8,1.1);}else wxBolt(x,z,false);}}
+  if(WX.strike){WX.strike.t+=dt;if(WX.strike.t>1.1){const s=WX.strike;WX.strike=null;wxBolt(s.x,s.z,true);}}
+  // rain and wind sounds
+  if(AU.ctx&&AU.on){if(!WX.rainG){const c=AU.ctx,src=c.createBufferSource();src.buffer=AU.noise;src.loop=true;const f=c.createBiquadFilter();f.type='bandpass';f.frequency.value=1800;f.Q.value=0.5;const g=c.createGain();g.gain.value=0;src.connect(f);f.connect(g);g.connect(AU.master);src.start();WX.rainG=g;WX.rainF=f;}
+    const rv=(L==='rain'||L==='storm'?0.16:L==='sandstorm'||L==='blizzard'?0.12:0)*k*(homeOpen?0.4:1);WX.rainG.gain.setTargetAtTime(rv,AU.ctx.currentTime,0.6);WX.rainF.frequency.value=L==='sandstorm'||L==='blizzard'?600:1800;}
+  // tell the player when the weather or the time of day changes
+  const ph=phaseName(WX.t);if(!homeOpen&&(L!==WX.lastLocal||ph!==WX.lastPhase)){
+    if(WX.lastLocal&&L!==WX.lastLocal&&WXTIP[L])feed(WXICON[L]+' '+WXTIP[L],'#bfe0ff');
+    if(WX.lastPhase&&ph!==WX.lastPhase&&(ph==='Night'||ph==='Dawn'))feed(ph==='Night'?'🌙 '+WXTIP.night:'🌅 Dawn breaks. The monsters calm down.','#c8c0ff');
+    WX.lastLocal=L;WX.lastPhase=ph;}
+  clockT-=dt;if(clockT<=0){clockT=0.5;const hh=Math.floor(WX.t*24),mm=Math.floor((WX.t*24-hh)*60/15)*15,night=WX.t<0.22||WX.t>0.8;
+    clockEl.querySelector('i').textContent=night&&L==='clear'?'☾':WXICON[L]||'☀';clockEl.querySelector('b').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
+    clockEl.querySelector('span').textContent=(L==='clear'?ph:WXNAME[L])+' · Day '+WX.dayNo;clockEl.title=WXTIP[L]||(night?WXTIP.night:'');}
+}
+function wxBolt(x,z,near){const y=groundH(x,z),top=new T.Vector3(x+fr(-20,20),y+140,z+fr(-20,20)),bot=new T.Vector3(x,y,z);showBolt([{pts:boltPath(top,bot,8,6),w:near?0.35:0.5}],0.35,0xfff2b8);skyBoost=near?1:0.7;
+  after(near?0:Math.hypot(x-player.x,z-player.z)/340,()=>SFX.thunder&&SFX.thunder(x,z));
+  if(near){blast(x,y+0.5,z,3,14,0.6);burst(x,y+0.4,z,0xfff2b8,40,9,0.4);shake(0.8,x,z);lightFlash(x,y+3,z,0xfff2b8,6,0.6,60);
+    for(const e of enemies)if(e.state!=='dead'&&Math.hypot(e.x-x,e.z-z)<3.5)damageEnemy(e,40+SKILL.level*8,0,0,6,{combo:1,stun:2});
+    if(pIn(x,z,3))hurtPlayer(10+SKILL.level*1.5,x,z,8,null);}}
+// lighting for the time of day and the weather, mixed with spell dimming and lightning flashes
+function applySkyLight(dim){
+  const d=WX.day,low=1-smooth(0.05,0.4,Math.abs(SUN.y)),dusk=low*smooth(-0.2,0.05,SUN.y),k=WX.kind==='clear'?0:WX.k,L=WX.local;
+  const cloud=(L==='cloudy'?0.45:L==='rain'||L==='snow'?0.88:L==='storm'||L==='blizzard'?1:L==='fog'?0.6:L==='sandstorm'||L==='ashfall'?0.75:L==='spores'?0.4:0)*k;
+  const useSun=SUN.y>-0.04;LDIR.copy(useSun?SUN:MOON);if(LDIR.y<0.18){LDIR.y=0.18;LDIR.normalize();}
+  sun.color.setRGB(1,0.93,0.78).lerp(_wc.setRGB(1,0.55,0.3),dusk*0.85);if(!useSun)sun.color.setRGB(0.55,0.65,1);
+  sun.intensity=(useSun?1.28*smooth(-0.04,0.18,SUN.y):0.32*smooth(0.0,0.25,MOON.y))*(1-0.62*dim)*(1-0.75*cloud);
+  hemi.intensity=(0.22+0.52*d)*(1-0.6*dim)*(1-0.25*cloud)+skyBoost*1.6;hemi.color.setRGB(0.74,0.85,1).lerp(_wc.setRGB(0.3,0.38,0.65),1-d);
+  DAYFOG.copy(fogNow);if(L==='sandstorm')DAYFOG.lerp(SANDFOG,0.7*k);else if(L==='ashfall')DAYFOG.lerp(ASHFOG,0.7*k);else DAYFOG.lerp(STORMFOG,cloud*0.8);
+  _wc2.copy(NIGHTFOG).lerp(DAYFOG,d);_wc2.lerp(DUSKFOG,dusk*0.45*(1-cloud));scene.fog.color.copy(_wc2).multiplyScalar(1-0.55*dim);
+  const U2=sky.material.uniforms;U2.uHor.value=scene.fog.color;U2.uBoost.value=skyBoost*0.6-dim*0.22;U2.uDay.value=d;U2.uCloud.value=cloud;U2.uMoon.value.copy(MOON);U2.uDusk.value=dusk*(1-cloud);
+  nightLight.intensity=(1-d)*1.3;nightLight.position.set(camera.position.x,camera.position.y+0.3,camera.position.z);
+  const mk=0.25+0.75*d;for(const m of MTN){m.material.color.copy(m.userData.base).multiplyScalar(mk*(1-0.35*cloud));}
+  for(const c of clouds){if(!c.userData.base)c.userData.base=c.material.color.clone();c.material.color.copy(c.userData.base).multiplyScalar((0.3+0.7*d)*(1-0.5*cloud));c.material.opacity=Math.min(1,(c.userData.op0==null?(c.userData.op0=c.material.opacity):c.userData.op0)*(1+cloud));}
+}
+MTN.push(...(window.__mtn||[]));
 function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   if(e.state==='dead'||e.under)return;e.hitT=time;if(e.base==='beetle'&&(e.state==='charge'||e.state==='roar'))dmg*=0.3;
   if(e.T.boss){if(o)o=Object.assign({},o,{freeze:o.freeze?1.5:0,root:o.root?1.5:0,stun:0});kx=(kx||0)*0.3;kz=(kz||0)*0.3;ky=0;
@@ -6394,7 +6507,7 @@ function damageEnemy(e,dmg,kx,kz,ky,o,quiet){
   if(!e.aggro&&!quiet){e.aggro=true;alertCamp(e.camp);}
   if(e.frozen>0)dmg*=1.5;
   if(o&&o.sp)dmg*=spellMul(o.sp);
-  if(o&&o.sp!=null&&SPELLS[o.sp]){if(e.T.weak&&SPELLS[o.sp].el===e.T.weak)dmg*=1.6;if(SKILL.guards&&SKILL.guards.length)dmg*=1+0.04*SKILL.guards.length;}
+  if(o&&o.sp!=null&&SPELLS[o.sp]){dmg*=wxMul(SPELLS[o.sp].el);if(e.T.weak&&SPELLS[o.sp].el===e.T.weak)dmg*=1.6;if(SKILL.guards&&SKILL.guards.length)dmg*=1+0.04*SKILL.guards.length;}
   if(e.gShield&&!(o&&o.combo))dmg*=0.12;
   if(o&&(o.sp||o.fire))dmg*=1+0.1*SKILL.up.focus;
   if(o&&o.sp&&player.empT>time)dmg*=player.empMul;
@@ -6694,7 +6807,9 @@ $('setsens').addEventListener('input',e=>{SET.sens=+e.target.value/100;saveSet()
 $('setinv').addEventListener('change',e=>{SET.invY=e.target.checked;saveSet();});
 function syncComfortUI(){const m=SET.music==null?0.5:SET.music,sh=shakeMul();$('setmus').value=Math.round(m*100);$('musout').textContent=Math.round(m*100)+'%';$('setshake').value=Math.round(sh*100);$('shakeout').textContent=Math.round(sh*100)+'%';
   for(const b of document.querySelectorAll('#textrow [data-tx]'))b.setAttribute('aria-pressed',String(b.dataset.tx===(SET.text||'normal')));for(const b of document.querySelectorAll('#flashrow [data-fl]'))b.setAttribute('aria-pressed',String((b.dataset.fl==='1')===(SET.flash!==false)));
-  $('setcontrast').checked=!!SET.contrast;renderBinds();}
+  $('setcontrast').checked=!!SET.contrast;renderBinds();for(const b of document.querySelectorAll('#cyclerow [data-cy]'))b.setAttribute('aria-pressed',String((b.dataset.cy==='1')===(SET.cycle!==false)));for(const b of document.querySelectorAll('#wxrow [data-wx]'))b.setAttribute('aria-pressed',String((b.dataset.wx==='1')===(SET.weather!==false)));}
+for(const b of document.querySelectorAll('#cyclerow [data-cy]'))b.addEventListener('click',()=>{SET.cycle=b.dataset.cy==='1';saveSet();syncComfortUI();});
+for(const b of document.querySelectorAll('#wxrow [data-wx]'))b.addEventListener('click',()=>{SET.weather=b.dataset.wx==='1';if(!SET.weather){WX.next='clear';}saveSet();syncComfortUI();});
 $('setmus').addEventListener('input',e=>{SET.music=+e.target.value/100;saveSet();$('musout').textContent=e.target.value+'%';});
 $('setshake').addEventListener('input',e=>{SET.shake=+e.target.value/100;saveSet();$('shakeout').textContent=e.target.value+'%';});
 for(const b of document.querySelectorAll('#textrow [data-tx]'))b.addEventListener('click',()=>{SET.text=b.dataset.tx;saveSet();applyComfort();syncComfortUI();});
@@ -6874,7 +6989,7 @@ function updateEnemies(dt){
     e.t+=dt;e.cd-=dt;e.chargeCd-=dt;e.frozen-=dt;e.rooted-=dt;e.stun-=dt;e.flash=Math.max(0,e.flash-dt*5);if(e.guardG)updateGuardianAI(e,dt);
     if(e.burn>0){e.burn-=dt;damageEnemy(e,7*dt,0,0,0,null,true);if(Math.random()<0.5)flame(e.x+fr(-0.3,0.3),e.y+(T0.fly?0:T0.h*fr(0.2,0.8)),e.z+fr(-0.3,0.3),0.6);if(e.state==='dead')continue;}
     if(e.poison>0){e.poison-=dt;damageEnemy(e,6*dt,0,0,0,null,true);if(Math.random()<0.3)PA.spawn(e.x+fr(-0.3,0.3),e.y+(T0.fly?0:T0.h*fr(0.2,0.9)),e.z+fr(-0.3,0.3),0,0.8,0,0.6,0.14,0.03,0.6,1,0.3,0.9,0.3,0.7,0.1,0,0);if(e.state==='dead')continue;}
-    if(!e.aggro&&!player.dead&&COMBAT.on&&dist<T0.aggro&&e.state!=='rise'){e.aggro=true;alertCamp(e.camp);if(e.base==='brute'||e.base==='golem')SFX.growl(e.x,e.z);}
+    if(!e.aggro&&!player.dead&&COMBAT.on&&dist<T0.aggro*WX.aggroMul&&e.state!=='rise'){e.aggro=true;alertCamp(e.camp);if(e.base==='brute'||e.base==='golem')SFX.growl(e.x,e.z);}
     if(e.aggro&&!e.minion){const hd=Math.hypot(e.x-e.home.x,e.z-e.home.z);if(player.dead||(hd>60&&dist>22)){e.aggro=false;e.state='return';}}
     const gy=groundH(e.x,e.z),frozen=e.frozen>0,act=!frozen&&e.stun<=0&&!player.dead&&e.state!=='rise';
     let wx=0,wz=0;
@@ -7792,9 +7907,10 @@ function bkKey(e){const k=e.code;
 /* save */
 const SAVEKEY='wizard-meadow-save-1';
 function queueSave(){saveT=time+1;}
-function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,tut:SKILL.tut,combos:SKILL.combos||[],guards:SKILL.guards||[],ng:SKILL.ng||0,story:SKILL.story,storySeen:SKILL.storySeen,riftMax:SKILL.riftMax||0,v2:1}));}catch(_){}}
+function saveGame(){try{localStorage.setItem(SAVEKEY,JSON.stringify({v:1,level:SKILL.level,xp:SKILL.xp,points:SKILL.points,rank:SKILL.rank,gold:SKILL.gold,inv:SKILL.inv,quests:SKILL.quests,kills:COMBAT.kills,up:SKILL.up,tb:SKILL.tomesBought,equip:SKILL.equip,study:SKILL.study,ws:SKILL.ws,chests:SKILL.chests,tut:SKILL.tut,wxt:WX.t,day:WX.dayNo,combos:SKILL.combos||[],guards:SKILL.guards||[],ng:SKILL.ng||0,story:SKILL.story,storySeen:SKILL.storySeen,riftMax:SKILL.riftMax||0,v2:1}));}catch(_){}}
 function loadGame(){try{const d=JSON.parse(localStorage.getItem(SAVEKEY)||'null');if(!d||d.v!==1)return false;
   Object.assign(SKILL,{level:d.level,xp:d.xp,points:d.points,rank:(d.rank||[]).concat(Array(100).fill(0)).slice(0,100),gold:d.gold,inv:d.inv||{},quests:d.quests||{},up:Object.assign({robes:0,focus:0,boots:0,sigil:0,luck:0,broom:0},d.up||{}),tomesBought:d.tb||0,equip:d.equip||null,study:d.study||null,ws:d.ws||[],chests:d.chests||[],tut:d.tut==null?99:d.tut,combos:d.combos||[],guards:d.guards||[],ng:d.ng||0,story:d.story,storySeen:d.storySeen,riftMax:d.riftMax||0});
+  if(d.wxt!=null){WX.t=d.wxt;WX.dayNo=d.day||1;}
   if(d.newgp){d.newgp=0;for(const id of['grimoire','sparks','imps','village'])SKILL.quests[id]={state:'active',prog:0};after(2.5,()=>banner('New Game+ '+SKILL.ng,'Monsters are stronger · rewards are richer'));}
   if(!d.v2){SKILL.inv.dust=(SKILL.inv.dust||0)+4;if(!SKILL.quests.grimoire)SKILL.quests.grimoire={state:'active',prog:0};}
   for(const c of CHESTS)if(!c.camp&&SKILL.chests.includes(c.id)){c.opened=true;c.open=1;chestMatrix(c);}refreshGlow();
@@ -7949,7 +8065,7 @@ function updateWorld(dt){
   const o=biomeW(player.x,player.z,_bw);
   // fog and sky drift toward the local biome's air
   fogTmp.copy(FOGC).multiplyScalar(1-o);for(let i=0;i<12;i++)if(_bw[i]>0){const f=BIOMES[i].fog;fogTmp.r+=f[0]*_bw[i];fogTmp.g+=f[1]*_bw[i];fogTmp.b+=f[2]*_bw[i];}
-  fogNow.lerp(fogTmp,Math.min(1,dt*0.8));scene.fog.density=(0.0025+0.0016*(_bw[3]+_bw[1]*0.6+_bw[7]*1.2+_bw[6]*0.5+_bw[9]*0.7+_bw[11]*0.9-_bw[8]*0.45-_bw[10]*0.3))*(BROOM.on?lerp(1,0.5,smooth(6,110,player.feet-groundH(player.x,player.z))):1);
+  fogNow.lerp(fogTmp,Math.min(1,dt*0.8));scene.fog.density=(0.0025+0.0016*(_bw[3]+_bw[1]*0.6+_bw[7]*1.2+_bw[6]*0.5+_bw[9]*0.7+_bw[11]*0.9-_bw[8]*0.45-_bw[10]*0.3))*(BROOM.on?lerp(1,0.5,smooth(6,110,player.feet-groundH(player.x,player.z))):1)*WX.fogMul;
   // entering a biome
   let bi=-1,bwm=0.55;for(let i=0;i<12;i++)if(_bw[i]>bwm){bwm=_bw[i];bi=i;}
   if(bi!==curBiome){curBiome=bi;if(bi>=0){if(!seenBiomes[bi]){seenBiomes[bi]=1;banner(BIOMES[bi].name,BIOMES[bi].sub);}else toast(BIOMES[bi].name);}}
@@ -8228,8 +8344,7 @@ function frame(now){
   if(flashV>0.002){flashEl.style.opacity=flashV.toFixed(3);flashV*=Math.exp(-dt*7);}else if(flashV!==0){flashV=0;flashEl.style.opacity='0';}
   // dimming for the darker spells, lightning sky flash
   let dT=0;for(const d of dims)if(d.v>dT)dT=d.v;dim+=(dT-dim)*Math.min(1,dt*3.2);skyBoost*=Math.exp(-dt*9);
-  hemi.intensity=0.74*(1-0.6*dim)+skyBoost*1.6;sun.intensity=1.28*(1-0.62*dim);
-  scene.fog.color.copy(fogNow).multiplyScalar(1-0.55*dim);sky.material.uniforms.uHor.value=scene.fog.color;sky.material.uniforms.uBoost.value=skyBoost*0.6-dim*0.22;
+  updateWeather(dt);applySkyLight(dim);
   treeGust*=Math.exp(-dt*1.4);U.uTreeGust.value=treeGust;
   mill.boost*=Math.exp(-dt*0.45);mill.sails.rotation.z-=dt*(mill.spin+mill.boost);
   for(const c of clouds){c.position.x+=(homeOpen?Math.min(0.05,raw):dt)*1.6;if(c.position.x>2600)c.position.x=-2600;}
@@ -8238,7 +8353,7 @@ function frame(now){
   sky.position.copy(camera.position);
   { // keep the shadow frustum centred on the player, snapped to texels to avoid shimmer
     const snap=144/CFG.shadow*4,cx=Math.round(player.x/snap)*snap,cz=Math.round(player.z/snap)*snap;
-    sun.target.position.set(cx,0,cz);sun.position.set(cx+SUN.x*190,SUN.y*190,cz+SUN.z*190);sun.target.updateMatrixWorld();
+    sun.target.position.set(cx,0,cz);sun.position.set(cx+LDIR.x*190,LDIR.y*190,cz+LDIR.z*190);sun.target.updateMatrixWorld();
   }
   if(paintDirty&&time>nextPaint){groundTex.needsUpdate=true;paintDirty=false;nextPaint=time+0.08;}
   water.nt.offset.set(time*0.012,time*0.008);updateWaypoint();updateLandmarks(dt);updateXPOrbs(dt);updateFairy(Math.min(0.1,raw));updateTutorial(Math.min(0.1,raw));
