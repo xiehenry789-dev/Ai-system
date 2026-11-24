@@ -235,7 +235,7 @@ body.touch #riftbar{top:calc(env(safe-area-inset-top,0px) + 196px)}
 .phead{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin-bottom:14px;font-variant-numeric:tabular-nums}
 .phead .pl{font:700 18px/1 var(--display);color:var(--gold);letter-spacing:.06em}
 .phead .px{color:var(--muted)}
-.phead .pg{display:flex;align-items:center;gap:4px;font-weight:700;color:#ffd24a}.phead .pg img{width:18px;height:18px}
+.phead .pg{position:static!important;inset:auto!important;padding:0!important;display:flex;align-items:center;gap:4px;font-weight:700;color:#ffd24a}.phead .pg img{width:18px;height:18px}
 .phead .pp{margin-left:auto;padding:3px 10px;border-radius:999px;background:rgba(127,180,255,.15);color:#9fc4ff;font-weight:700}
 .items,.spells{display:flex;flex-direction:column;gap:8px}
 .it,.sp{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid rgba(255,244,214,.1)}
@@ -615,6 +615,10 @@ body{font-variant-numeric:lining-nums}
 .tq span{font-size:14.5px!important}
 .fi{color:#efe2c2}
 .phead .px,.phead .pp,#lvl,#gold,#hptext,.qq span,#dquest span{font-family:var(--ui)!important;font-variant-numeric:lining-nums}
+body.touch #prompt{bottom:auto;top:58%;z-index:76}
+#prompt{border-radius:2px!important;background:var(--wax)!important;border:1px solid #4a120c!important;color:#f8ecd2!important;font:700 15px/1 var(--display)!important;letter-spacing:.04em;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#menubtn{display:none}body.touch #menubtn{display:block;position:fixed;top:calc(env(safe-area-inset-top,0px) + 196px);right:calc(max(16px,env(safe-area-inset-right,0px)) + 46px);height:38px;padding:0 12px;pointer-events:auto;background:rgba(26,18,12,.6);border:1px solid rgba(106,82,50,.8);border-radius:2px;color:#f1e6cb;font:700 13px/1 var(--display);letter-spacing:.06em;z-index:5}
+body.narr #menubtn,body.home #menubtn{display:none!important}
 #hint{background:none!important;border:0!important;font:italic 500 15px/1.35 var(--ui)!important;color:#f1e6cb!important;text-shadow:0 1px 2px #000,0 0 10px rgba(0,0,0,.7);-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
 #narr{position:fixed;inset:0;z-index:30;pointer-events:auto;cursor:pointer;opacity:0;transition:opacity .9s ease}
 #narr[hidden]{display:none!important}#narr.on{opacity:1}
@@ -642,6 +646,7 @@ body.narr #hud,body.narr #status,body.narr #tracker,body.narr #clock,body.narr #
   <div id="hint"></div>
 </div>
 <button id="mute" type="button" aria-label="Mute sound" title="Sound on/off (N)">♪</button>
+<button id="menubtn" type="button" aria-label="Menu" hidden>Menu</button>
 <button id="mini" type="button" aria-label="Open the map (M)"><canvas id="minic" width="300" height="300" aria-hidden="true"></canvas><span class="key">M</span><span id="minidist" hidden></span></button>
 <button id="jump" type="button" aria-label="Jump" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V6M6 11l6-6 6 6"/></svg>Jump</button>
 <div id="hurt"></div>
@@ -7190,6 +7195,7 @@ for(const b of document.querySelectorAll('#diffrow [data-diff]'))b.addEventListe
 for(const b of document.querySelectorAll('#home .hm-back'))b.addEventListener('click',homeBack);
 for(const [id,pane] of[['psettings','hmsettings']])$(id).addEventListener('click',ev=>{ev.stopPropagation();openHome(pane,'pause');});
 $('pmenu').addEventListener('click',ev=>{ev.stopPropagation();saveGame();openHome(null,'menu');});
+$('menubtn').hidden=false;$('menubtn').addEventListener('click',ev=>{ev.stopPropagation();audioInit();saveGame();openHome(null,'menu');});
 function syncSettingsUI(){for(const b of document.querySelectorAll('#gfxrow [data-gfx]'))b.setAttribute('aria-pressed',String(b.dataset.gfx===GFX));
   for(const b of document.querySelectorAll('#sndrow [data-snd]'))b.setAttribute('aria-pressed',String((b.dataset.snd==='1')===AU.on));
   $('setvol').value=Math.round(SET.vol*100);$('volout').textContent=Math.round(SET.vol*100)+'%';$('setsens').value=Math.round(SET.sens*100);$('sensout').textContent=SET.sens.toFixed(1)+'×';$('setinv').checked=!!SET.invY;syncComfortUI();for(const b of document.querySelectorAll('#diffrow [data-diff]'))b.setAttribute('aria-pressed',String(b.dataset.diff===(SET.diff||'normal')));$('diffnote').textContent=DIFF().d+' Takes effect for monsters you meet from now on.';for(const b of document.querySelectorAll('#fairyrow [data-fy]'))b.setAttribute('aria-pressed',String((b.dataset.fy==='1')===(SET.fairy!==false)));
@@ -8117,7 +8123,7 @@ function updatePrompt(){
   if(BROOM.on&&player.feet-groundH(player.x,player.z)>2.6)return void(promptEl.hidden=true);
   let bd=3.4;for(const o of VILLAGERS){if(!(o.elder||o.merchant)||o.dead)continue;const d=Math.hypot(player.x-o.x,player.z-o.z);if(d<bd){bd=d;nearElder=o;}}
   for(const c of CHESTS){if(!c.vis||c.opened||Math.abs(player.feet-c.y)>2.2)continue;const d=Math.hypot(player.x-c.x,player.z-c.z);if(d<Math.min(bd,2.6)){bd=d;nearElder=c;}}
-  promptEl.hidden=!nearElder;if(nearElder){const t=(touchMode?'Tap':'E')+(nearElder.chest?' · Open the chest':(nearElder.merchant?' · Trade with ':' · Talk to ')+nearElder.name);if(promptEl.textContent!==t)promptEl.textContent=t;}
+  promptEl.hidden=!nearElder;if(nearElder){const t=(touchMode?'':'[E]  ')+(nearElder.chest?'Open the chest':(nearElder.merchant?'Trade with ':'Talk to ')+nearElder.name);if(promptEl.textContent!==t)promptEl.textContent=t;}
 }
 /* elder dialog */
 let dialogOpen=false,dialogQuest=null;
