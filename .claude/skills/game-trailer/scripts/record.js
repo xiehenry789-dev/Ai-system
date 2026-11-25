@@ -7,6 +7,7 @@ let html=fs.readFileSync(GAME,'utf8');
 html=html.replace('window.__wm={','window.__wm={gH:groundH,staffScene,VOLC:typeof VOLC!=="undefined"?VOLC:{x:1440,z:0},LIGHT:typeof LIGHT!=="undefined"?LIGHT:{x:-40,z:1410},KING:typeof KING!=="undefined"?KING:null,cleanup:()=>{for(const e of enemies)e.despawn=true;},');
 html=html.replace('if(time>4&&!paused()){','if(false){');
 html=html.replace('function storyCard(title,lines,btn){','function storyCard(title,lines,btn){return;'); // no story narration in the trailer
+html=html.replace('function cutPlay(title,shots){','function cutPlay(title,shots){return;'); // no cutscenes in the trailer
 html=html.replace('function updateBadge(e,show){','function updateBadge(e,show){if(window.__vt&&window.__vt.on){e.badge.visible=false;e.bar.bg.visible=e.bar.fill.visible=false;return;}'); // no badges or health bars in the trailer
 html=html.replace('const g=FAIRY.g,show=!homeOpen','const g=FAIRY.g,show=!window.__vt.on&&!homeOpen'); // no fairy in the trailer
 html=html.replace('function frame(now){\n  requestAnimationFrame(frame);','function frame(now){\n  requestAnimationFrame(frame);if(window.__vt.on){if(!window.__vt.go)return;now=window.__vt.t;window.__vt.go=false;setTimeout(window.__vt.res,0);}'); // the game only moves on when the recorder asks for the next frame
